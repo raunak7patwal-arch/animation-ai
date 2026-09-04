@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Animation AI</string>
+    <string name="title_activity_main">Animation AI</string>
+    <string name="package_name">com.aditybhat.animationai</string>
+    <string name="custom_url_scheme">com.aditybhat.animationai</string>
+</resources>
