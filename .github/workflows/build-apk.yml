@@ -27,8 +27,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Check Capacitor
+        run: ./node_modules/.bin/cap --version
+
       - name: Sync Capacitor
-        run: npx cap sync android
+        run: ./node_modules/.bin/cap sync android
 
       - name: Build Debug APK
         working-directory: android
