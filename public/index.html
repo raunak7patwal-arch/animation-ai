@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Animation AI</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="app">
+  <header>
+    <h1>🎬 Animation AI</h1>
+    <p>Turn your idea into an animated story</p>
+  </header>
+
+  <main>
+    <div class="card">
+      <label>✨ Describe your story</label>
+      <textarea id="prompt" placeholder="Example: एक मजेदार लड़का स्कूल में एक अजीब समस्या में फंस जाता है..."></textarea>
+
+      <div class="options">
+        <div>
+          <label>⏱ Video Duration</label>
+          <select id="duration">
+            <option value="5 minutes">5 Minutes</option>
+            <option value="10 minutes">10 Minutes</option>
+          </select>
+        </div>
+
+        <div>
+          <label>🎙 Voice Mode</label>
+          <select id="voiceMode">
+            <option value="automatic">🤖 Automatic AI Voice</option>
+            <option value="manual">🎤 Select Manually</option>
+          </select>
+        </div>
+      </div>
+
+      <button id="generateBtn" onclick="generateAnimation()">
+        🚀 Generate Animation
+      </button>
+    </div>
+
+    <div class="card hidden" id="progressCard">
+      <h2>🤖 AI Working...</h2>
+      <div class="progress-bar">
+        <div id="progress"></div>
+      </div>
+      <p id="status">Preparing your animation...</p>
+    </div>
+
+    <div class="card hidden" id="resultCard">
+      <h2>🎬 Generated Project</h2>
+      <div id="result"></div>
+    </div>
+  </main>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
