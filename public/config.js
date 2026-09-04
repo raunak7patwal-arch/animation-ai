@@ -1,9 +1,7 @@
-const API_BASE_URL = "http://127.0.0.1:3000";
+const API_BASE_URL = "https://animation-ai-1.onrender.com";
 
 async function apiFetch(path, options = {}) {
-  const url = API_BASE_URL + path;
-
-  const response = await fetch(url, {
+  const response = await fetch(API_BASE_URL + path, {
     ...options,
     headers: {
       "Content-Type": "application/json",
@@ -11,20 +9,27 @@ async function apiFetch(path, options = {}) {
     }
   });
 
-  const contentType = response.headers.get("content-type") || "";
+  const type = response.headers.get("content-type") || "";
+  const raw = await response.text();
 
-  if (!contentType.includes("application/json")) {
-    const text = await response.text();
+  let data;
+  try {
+    data = raw ? JSON.parse(raw) : {};
+  } catch {
     throw new Error(
-      "Backend API उपलब्ध नहीं है। यह APK अकेले Node.js server नहीं चला सकता। Response: " +
-      text.substring(0, 100)
+      "Server API ने JSON नहीं भेजा. Status: " +
+      response.status +
+      " | " +
+      raw.substring(0, 150)
     );
   }
 
   if (!response.ok) {
-    const data = await response.json();
-    throw new Error(data.error || "API request failed");
+    throw new Error(data.error || data.message || "Server request failed");
   }
 
-  return response.json();
+  return data;
 }
+
+window.API_BASE_URL = API_BASE_URL;
+window.apiFetch = apiFetch;
