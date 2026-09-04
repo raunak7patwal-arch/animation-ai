@@ -158,93 +158,8 @@ app.post("/generate", (req, res) => {
   }
 });
 
-
-/* ==========================================
-   VIDEO JOB QUEUE — STABILITY SYSTEM
-========================================== */
-
-const videoJobs = new Map();
-const videoQueue = [];
-
-let videoWorkerRunning = false;
-
-function createJobId() {
-  return (
-    Date.now().toString(36) +
-    "-" +
-    Math.random().toString(36).slice(2, 10)
-  );
-}
-
-async function processVideoQueue() {
-
-  if (videoWorkerRunning) return;
-
-  videoWorkerRunning = true;
-
-  console.log("🟢 VIDEO QUEUE WORKER STARTED");
-
-  try {
-
-    while (videoQueue.length > 0) {
-
-      const jobId = videoQueue.shift();
-
-      const job = videoJobs.get(jobId);
-
-      if (!job) continue;
-
-      job.status = "processing";
-      job.startedAt = new Date().toISOString();
-
-      console.log("\n====================================");
-      console.log(`🎬 PROCESSING JOB: ${jobId}`);
-      console.log(`📦 QUEUE LEFT: ${videoQueue.length}`);
-      console.log("====================================");
-
-      try {
-
-        const result = await generateVideo(job.options);
-
-        job.status = "completed";
-        job.result = result;
-        job.completedAt = new Date().toISOString();
-
-        console.log(`✅ JOB COMPLETED: ${jobId}`);
-
-      } catch (error) {
-
-        job.status = "failed";
-        job.error =
-          error?.message || "Video generation failed";
-
-        job.completedAt = new Date().toISOString();
-
-        console.error(`❌ JOB FAILED: ${jobId}`);
-        console.error(error);
-
-      }
-
-    }
-
-  } finally {
-
-    videoWorkerRunning = false;
-
-    console.log("⚪ VIDEO QUEUE WORKER IDLE");
-
-  }
-
-}
-
-
 /* ==========================================
    VIDEO GENERATION
-========================================== */
-
-
-/* ==========================================
-   VIDEO GENERATION API
 ========================================== */
 
 app.post("/generate-video", async (req, res) => {
@@ -257,9 +172,9 @@ app.post("/generate-video", async (req, res) => {
       duration,
       quality,
       frameSize
-    } = req.body || {};
+    } = req.body;
 
-    if (!prompt || !String(prompt).trim()) {
+    if (!prompt || !prompt.trim()) {
 
       return res.status(400).json({
         success: false,
@@ -268,150 +183,40 @@ app.post("/generate-video", async (req, res) => {
 
     }
 
-    const jobId = createJobId();
+    console.log("\n====================================");
+    console.log("🎬 VIDEO GENERATION STARTED");
+    console.log("====================================");
 
-    const job = {
-
-      id: jobId,
-
-      status: "queued",
-
-      createdAt: new Date().toISOString(),
-
-      options: {
-        title: title || "Animation AI Video",
-        prompt: String(prompt).trim(),
-        duration: duration || "5 minutes",
-        quality: quality || "1080p",
-        frameSize: frameSize || "16:9"
-      }
-
-    };
-
-    videoJobs.set(jobId, job);
-
-    videoQueue.push(jobId);
-
-    console.log(
-      `📥 VIDEO JOB QUEUED: ${jobId} | Position: ${videoQueue.length}`
-    );
-
-    processVideoQueue().catch(error => {
-      console.error("❌ VIDEO QUEUE WORKER ERROR:", error);
+    const result = await generateVideo({
+      title: title || "Animation AI Video",
+      prompt,
+      duration: duration || "5 minutes",
+      quality: quality || "1080p",
+      frameSize: frameSize || "16:9"
     });
 
-    return res.status(202).json({
+    console.log("✅ VIDEO CREATED");
+    console.log(result.videoFile);
 
+    res.json({
       success: true,
-
-      jobId,
-
-      status: "queued",
-
-      message: "Video generation has been added to the queue.",
-
-      queuePosition: videoQueue.length
-
+      message: "Video generated successfully!",
+      project: result
     });
 
   } catch (error) {
 
-    console.error("❌ VIDEO QUEUE ERROR:", error);
+    console.error("❌ VIDEO GENERATION ERROR");
+    console.error(error);
 
-    return res.status(500).json({
+    res.status(500).json({
       success: false,
-      error: error.message || "Unable to create video job"
+      error: error.message
     });
 
   }
 
 });
-
-
-/* ==========================================
-   VIDEO JOB STATUS API
-========================================== */
-
-app.get("/api/video-job/:jobId", (req, res) => {
-
-  const job = videoJobs.get(req.params.jobId);
-
-  if (!job) {
-
-    return res.status(404).json({
-      success: false,
-      error: "Video job not found"
-    });
-
-  }
-
-  const response = {
-
-    success: true,
-
-    jobId: job.id,
-
-    status: job.status,
-
-    createdAt: job.createdAt,
-
-    startedAt: job.startedAt || null,
-
-    completedAt: job.completedAt || null
-
-  };
-
-  if (job.status === "queued") {
-
-    const position =
-      videoQueue.indexOf(job.id) + 1;
-
-    response.queuePosition =
-      position > 0 ? position : 0;
-
-  }
-
-  if (job.status === "completed") {
-
-    response.project = job.result;
-
-  }
-
-  if (job.status === "failed") {
-
-    response.error = job.error;
-
-  }
-
-  return res.json(response);
-
-});
-
-
-/* ==========================================
-   VIDEO QUEUE STATUS
-========================================== */
-
-app.get("/api/video-queue", (req, res) => {
-
-  return res.json({
-
-    success: true,
-
-    workerRunning: videoWorkerRunning,
-
-    queued: videoQueue.length,
-
-    jobs: Array.from(videoJobs.values()).map(job => ({
-      jobId: job.id,
-      status: job.status,
-      createdAt: job.createdAt
-    }))
-
-  });
-
-});
-
 
 /* ==========================================
    FRONTEND FALLBACK

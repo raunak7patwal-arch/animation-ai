@@ -11,9 +11,9 @@ const API_BASE_URL = localStorage.getItem("animation_ai_api_url") || "";
 function apiUrl(endpoint) {
   if (!API_BASE_URL) return endpoint;
 
-  return API_BASE_URL.replace(/\/$/, "") +
+  return API_BASE_URL.replace(/\\/$/, "") +
     "/" +
-    endpoint.replace(/^\//, "");
+    endpoint.replace(/^\\//, "");
 }
 
 async function safeFetch(endpoint, options = {}, timeout = 20 * 60 * 1000) {
@@ -58,7 +58,7 @@ async function safeFetch(endpoint, options = {}, timeout = 20 * 60 * 1000) {
     } else {
 
       const preview =
-        text.substring(0, 80).replace(/\s+/g, " ");
+        text.substring(0, 80).replace(/\\s+/g, " ");
 
       if (
         text.trim().toLowerCase().startsWith("<!doctype") ||
@@ -143,10 +143,10 @@ async function checkServer() {
 
   try {
 
-    const data = await safeFetch("/api/status", {}, 10000);
+    const response = await fetch("/api/status");
 
-    if (!data || data.success === false) {
-      throw new Error("Server is offline");
+    if (!response.ok) {
+      throw new Error();
     }
 
     serverStatus.innerHTML = "🟢 Animation Engine Online";
@@ -253,7 +253,7 @@ generateBtn.addEventListener("click", async () => {
 
   try {
 
-    const data = await safeFetch("/generate-video", {
+    const response = await fetch("/generate-video", {
 
       method: "POST",
 
@@ -275,13 +275,16 @@ generateBtn.addEventListener("click", async () => {
 
       })
 
-    }, 30 * 60 * 1000);
+    });
 
 
     clearInterval(progressTimer);
 
 
-    if (!data.success) {
+    const data = await response.json();
+
+
+    if (!response.ok || !data.success) {
 
       throw new Error(
         data.error ||

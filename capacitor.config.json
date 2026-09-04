@@ -3,7 +3,6 @@
   "appName": "Animation AI",
   "webDir": "public",
   "server": {
-    "url": "https://animation-ai.onrender.com",
-    "cleartext": false
+    "androidScheme": "https"
   }
 }

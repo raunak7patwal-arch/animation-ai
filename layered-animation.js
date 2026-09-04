@@ -5,7 +5,6 @@ const { promisify } = require("util");
 const execFileAsync = promisify(execFile);
 
 function getMovement(sceneNumber) {
-
   const movements = [
     { name: "BOY WALK + ROBOT BOB" },
     { name: "BOY SURPRISED + ROBOT SHAKE" },
@@ -32,22 +31,18 @@ async function animateLayeredScene({
 }) {
 
   const move = getMovement(sceneNumber);
+  const duration = Math.max(1, Number(sceneDuration) || 5);
 
   console.log(`🎬 V7 Scene ${sceneNumber}: ${move.name}`);
-
-  /*
-    FAST MOBILE MODE
-
-    Instead of expensive animated overlay expressions,
-    use lightweight scaling and overlay rendering.
-  */
+  console.log(`⏱️ Forced duration: ${duration} seconds`);
 
   const filter =
-    `[0:v]scale=${width}:${height}[bg];` +
+    `[0:v]scale=${width}:${height},setsar=1[bg];` +
     `[1:v]scale=${width}:${height},format=rgba[boy];` +
     `[2:v]scale=${width}:${height},format=rgba[robot];` +
-    `[bg][boy]overlay=0:0[tmp];` +
-    `[tmp][robot]overlay=0:0,fps=24[v]`;
+    `[bg][boy]overlay=0:0:shortest=0[tmp];` +
+    `[tmp][robot]overlay=0:0:shortest=0,` +
+    `fps=24,trim=duration=${duration},setpts=PTS-STARTPTS[v]`;
 
   await execFileAsync("ffmpeg", [
     "-y",
@@ -64,6 +59,7 @@ async function animateLayeredScene({
     "-framerate", "24",
     "-i", robotFile,
 
+    "-stream_loop", "-1",
     "-i", audioFile,
 
     "-filter_complex", filter,
@@ -71,16 +67,17 @@ async function animateLayeredScene({
     "-map", "[v]",
     "-map", "3:a",
 
+    "-t", String(duration),
+
     "-c:v", "libx264",
     "-preset", "ultrafast",
     "-crf", "28",
-
     "-pix_fmt", "yuv420p",
 
     "-c:a", "aac",
     "-b:a", "96k",
 
-    "-shortest",
+    "-movflags", "+faststart",
 
     outputFile
   ]);
@@ -91,7 +88,9 @@ async function animateLayeredScene({
     );
   }
 
-  console.log(`✅ V7 Scene ${sceneNumber} completed`);
+  console.log(
+    `✅ V7 Scene ${sceneNumber} completed (${duration}s)`
+  );
 
   return outputFile;
 }

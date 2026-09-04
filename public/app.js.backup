@@ -1,118 +1,4 @@
 
-// ============================================================
-// ANIMATION AI — MASTER API & STABILITY LAYER
-// ============================================================
-
-// IMPORTANT:
-// खाली रहने पर same server/origin use होगा.
-// APK के लिए इसे deployed backend URL से बदलना होगा.
-const API_BASE_URL = localStorage.getItem("animation_ai_api_url") || "";
-
-function apiUrl(endpoint) {
-  if (!API_BASE_URL) return endpoint;
-
-  return API_BASE_URL.replace(/\/$/, "") +
-    "/" +
-    endpoint.replace(/^\//, "");
-}
-
-async function safeFetch(endpoint, options = {}, timeout = 20 * 60 * 1000) {
-
-  const controller = new AbortController();
-
-  const timer = setTimeout(() => {
-    controller.abort();
-  }, timeout);
-
-  try {
-
-    const response = await fetch(
-      apiUrl(endpoint),
-      {
-        ...options,
-        signal: controller.signal
-      }
-    );
-
-    const text = await response.text();
-
-    let data = null;
-
-    const contentType =
-      response.headers.get("content-type") || "";
-
-    if (
-      contentType.includes("application/json") ||
-      text.trim().startsWith("{") ||
-      text.trim().startsWith("[")
-    ) {
-
-      try {
-        data = JSON.parse(text);
-      } catch {
-        throw new Error(
-          "Server returned invalid JSON."
-        );
-      }
-
-    } else {
-
-      const preview =
-        text.substring(0, 80).replace(/\s+/g, " ");
-
-      if (
-        text.trim().toLowerCase().startsWith("<!doctype") ||
-        text.trim().toLowerCase().startsWith("<html")
-      ) {
-
-        throw new Error(
-          "API endpoint returned HTML instead of JSON. Backend URL/API route is incorrect."
-        );
-      }
-
-      throw new Error(
-        "Server returned an unexpected response: " + preview
-      );
-    }
-
-    if (!response.ok) {
-
-      throw new Error(
-        data?.error ||
-        data?.message ||
-        "Server error (" + response.status + ")"
-      );
-    }
-
-    return data;
-
-  } catch (error) {
-
-    if (error.name === "AbortError") {
-      throw new Error(
-        "Request timed out. The animation is taking too long or the server is unreachable."
-      );
-    }
-
-    if (
-      error instanceof TypeError &&
-      error.message.toLowerCase().includes("fetch")
-    ) {
-
-      throw new Error(
-        "Cannot connect to Animation AI server. Check your internet connection and backend server."
-      );
-    }
-
-    throw error;
-
-  } finally {
-
-    clearTimeout(timer);
-
-  }
-}
-
 const titleInput = document.getElementById("title");
 const promptInput = document.getElementById("prompt");
 
@@ -143,10 +29,10 @@ async function checkServer() {
 
   try {
 
-    const data = await safeFetch("/api/status", {}, 10000);
+    const response = await fetch("/api/status");
 
-    if (!data || data.success === false) {
-      throw new Error("Server is offline");
+    if (!response.ok) {
+      throw new Error();
     }
 
     serverStatus.innerHTML = "🟢 Animation Engine Online";
@@ -253,7 +139,7 @@ generateBtn.addEventListener("click", async () => {
 
   try {
 
-    const data = await safeFetch("/generate-video", {
+    const response = await fetch("/generate-video", {
 
       method: "POST",
 
@@ -275,13 +161,16 @@ generateBtn.addEventListener("click", async () => {
 
       })
 
-    }, 30 * 60 * 1000);
+    });
 
 
     clearInterval(progressTimer);
 
 
-    if (!data.success) {
+    const data = await response.json();
+
+
+    if (!response.ok || !data.success) {
 
       throw new Error(
         data.error ||
