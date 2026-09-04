@@ -9,18 +9,16 @@ async function apiFetch(path, options = {}) {
     }
   });
 
-  const type = response.headers.get("content-type") || "";
   const raw = await response.text();
+  const contentType = response.headers.get("content-type") || "";
 
   let data;
   try {
     data = raw ? JSON.parse(raw) : {};
-  } catch {
+  } catch (error) {
     throw new Error(
-      "Server API ने JSON नहीं भेजा. Status: " +
-      response.status +
-      " | " +
-      raw.substring(0, 150)
+      "Backend API error: JSON expected लेकिन server ने HTML/invalid response दिया. HTTP " +
+      response.status
     );
   }
 

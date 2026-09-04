@@ -5,6 +5,25 @@ const path = require("path");
 const { generateVideo } = require("./video-engine");
 
 const app = express();
+
+// ===== PRODUCTION API HEALTH CHECK =====
+app.get("/health", (req, res) => {
+  res.status(200).json({
+    success: true,
+    status: "ok",
+    engine: "Animation AI Backend",
+    timestamp: new Date().toISOString()
+  });
+});
+
+app.get("/api/health", (req, res) => {
+  res.status(200).json({
+    success: true,
+    status: "ok",
+    engine: "Animation AI Backend"
+  });
+});
+
 const PORT = process.env.PORT || 3000;
 
 /* ==========================================
