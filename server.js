@@ -100,7 +100,7 @@ app.post("/generate", (req, res) => {
   });
 });
 
-app.listen(3000, "127.0.0.1", () => {
+app.listen(process.env.PORT || 3000, "0.0.0.0", () => {
   console.log("\n🎬 Animation AI v2.0 is running!");
   console.log("📍 http://127.0.0.1:3000\n");
 });
