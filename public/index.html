@@ -295,6 +295,87 @@
 
       </section>
 
+    
+
+      <!-- VIDEO REFERENCE REMIX -->
+
+      <section id="remixPanel" class="panel parody-panel">
+
+        <div class="panel-title">
+          🎬 Video → AI Remix
+        </div>
+
+        <p class="panel-subtitle">
+          Use a video as creative reference and generate a new original stylized animation.
+        </p>
+
+        <label>🔗 Video Reference URL</label>
+
+        <input
+          id="remixUrl"
+          type="url"
+          placeholder="Paste YouTube video link..."
+          autocomplete="off"
+        >
+
+        <div class="parody-grid">
+
+          <div>
+            <label>🎨 Remix Style</label>
+
+            <select id="remixStyle">
+              <option value="animated">✨ Animated</option>
+              <option value="anime">⚡ Anime Inspired</option>
+              <option value="cartoon">🎨 Cartoon</option>
+              <option value="cinematic">🎬 Cinematic</option>
+              <option value="funny">😂 Funny</option>
+            </select>
+          </div>
+
+          <div>
+            <label>🔥 Transformation</label>
+
+            <select id="remixIntensity">
+              <option value="low">Light</option>
+              <option value="medium" selected>Medium</option>
+              <option value="high">Heavy</option>
+            </select>
+          </div>
+
+        </div>
+
+        <label>✍️ Your Creative Direction</label>
+
+        <textarea
+          id="remixPrompt"
+          placeholder="Example: Turn the idea into a funny school animation with completely new characters..."
+        ></textarea>
+
+        <button
+          id="analyzeRemixBtn"
+          class="primary-btn"
+          type="button"
+        >
+          🔍 Analyze Reference
+        </button>
+
+        <button
+          id="generateRemixBtn"
+          class="primary-btn"
+          type="button"
+          style="display:none"
+        >
+          🚀 Generate Original Remix
+        </button>
+
+        <div
+          id="remixStatus"
+          class="status-box"
+        ></div>
+
+      </section>
+
+
     </main>
 
 

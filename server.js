@@ -708,6 +708,186 @@ app.use((req, res, next) => {
   );
 });
 
+
+
+/* ============================================
+   VIDEO REFERENCE → ORIGINAL REMIX ENGINE
+   ============================================ */
+
+function isAllowedVideoReference(url) {
+  try {
+    const u = new URL(url);
+    return [
+      "youtube.com",
+      "www.youtube.com",
+      "youtu.be",
+      "m.youtube.com",
+      "vimeo.com"
+    ].includes(u.hostname);
+  } catch {
+    return false;
+  }
+}
+
+app.post("/api/remix/analyze", async (req, res) => {
+  try {
+    const { url, style = "animated", intensity = "medium" } = req.body || {};
+
+    if (!url || !isAllowedVideoReference(url)) {
+      return res.status(400).json({
+        success: false,
+        error: "Please enter a valid supported video reference URL."
+      });
+    }
+
+    return res.json({
+      success: true,
+      mode: "reference-remix",
+      reference: url,
+      style,
+      intensity,
+      message:
+        "Reference accepted. The new video will be generated as an original work inspired by broad visual and storytelling characteristics."
+    });
+
+  } catch (error) {
+    console.error("Remix analyze error:", error);
+    return res.status(500).json({
+      success: false,
+      error: error.message || "Unable to analyze reference."
+    });
+  }
+});
+
+
+app.post("/api/remix/generate", async (req, res) => {
+  try {
+
+    const {
+      url,
+      title = "Original AI Remix",
+      style = "animated",
+      intensity = "medium",
+      prompt = "",
+      duration = "30 seconds",
+      quality = "720p",
+      frameSize = "16:9"
+    } = req.body || {};
+
+    if (!url || !isAllowedVideoReference(url)) {
+      return res.status(400).json({
+        success: false,
+        error: "A valid video reference URL is required."
+      });
+    }
+
+    const stylePrompts = {
+      animated:
+        "Create a polished original animated interpretation with expressive characters and cinematic movement.",
+      anime:
+        "Create an original anime-inspired visual treatment with dynamic camera movement and expressive scenes.",
+      cartoon:
+        "Create an original colorful cartoon interpretation with exaggerated expressions and smooth animation.",
+      cinematic:
+        "Create an original cinematic reinterpretation with dramatic lighting and camera composition.",
+      funny:
+        "Create an original humorous animated interpretation with comedic timing and fresh characters."
+    };
+
+    const intensityPrompts = {
+      low: "Keep only a very loose thematic inspiration.",
+      medium: "Use broad storytelling inspiration while creating completely new scenes and characters.",
+      high: "Transform the concept heavily into a distinctly new creative work."
+    };
+
+    const generationPrompt = `
+TITLE: ${title}
+
+VIDEO REFERENCE:
+${url}
+
+IMPORTANT:
+Do not copy, reproduce, download, or recreate the source video frame-by-frame.
+Do not reuse the original video's exact dialogue, soundtrack, characters, or scenes.
+
+Create a NEW and ORIGINAL animated video.
+
+STYLE:
+${stylePrompts[style] || stylePrompts.animated}
+
+TRANSFORMATION:
+${intensityPrompts[intensity] || intensityPrompts.medium}
+
+USER CREATIVE DIRECTION:
+${prompt || "Create a fresh entertaining story with original characters."}
+
+OUTPUT REQUIREMENTS:
+- Original characters
+- Original scenes
+- New dialogue/storytelling
+- Smooth animation
+- Suitable for ${frameSize}
+- Target duration: ${duration}
+- Target quality: ${quality}
+
+The reference is only for broad creative inspiration.
+`;
+
+    const baseUrl =
+      process.env.PUBLIC_URL ||
+      process.env.RENDER_EXTERNAL_URL ||
+      `http://127.0.0.1:${PORT}`;
+
+    const response = await fetch(`${baseUrl}/generate-video`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        title,
+        prompt: generationPrompt,
+        duration,
+        quality,
+        frameSize,
+        mode: "reference-remix"
+      })
+    });
+
+    const text = await response.text();
+
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch {
+      throw new Error(
+        "Video pipeline returned a non-JSON response: " +
+        text.substring(0, 200)
+      );
+    }
+
+    if (!response.ok) {
+      return res.status(response.status).json(data);
+    }
+
+    return res.json({
+      success: true,
+      mode: "reference-remix",
+      reference: url,
+      original: true,
+      ...data
+    });
+
+  } catch (error) {
+    console.error("Remix generation error:", error);
+
+    return res.status(500).json({
+      success: false,
+      error: error.message || "Remix generation failed."
+    });
+  }
+});
+
+
 app.listen(PORT, "0.0.0.0", () => {
 
   console.log("\n====================================");

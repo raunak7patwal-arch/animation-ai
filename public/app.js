@@ -564,3 +564,214 @@ setInterval(checkServer, 10000);
     };
   }
 })();
+
+
+/* ============================================
+   VIDEO REFERENCE REMIX FRONTEND
+   ============================================ */
+
+(() => {
+
+  const remixUrl =
+    document.getElementById("remixUrl");
+
+  const remixStyle =
+    document.getElementById("remixStyle");
+
+  const remixIntensity =
+    document.getElementById("remixIntensity");
+
+  const remixPrompt =
+    document.getElementById("remixPrompt");
+
+  const analyzeRemixBtn =
+    document.getElementById("analyzeRemixBtn");
+
+  const generateRemixBtn =
+    document.getElementById("generateRemixBtn");
+
+  const remixStatus =
+    document.getElementById("remixStatus");
+
+  if (!remixUrl || !analyzeRemixBtn) return;
+
+  function remixMessage(message, error = false) {
+    remixStatus.textContent = message;
+    remixStatus.style.display = "block";
+    remixStatus.style.opacity = "1";
+  }
+
+  analyzeRemixBtn.addEventListener("click", async () => {
+
+    const url = remixUrl.value.trim();
+
+    if (!url) {
+      remixMessage("❌ Please paste a video URL.");
+      return;
+    }
+
+    analyzeRemixBtn.disabled = true;
+    analyzeRemixBtn.textContent = "⏳ Analyzing...";
+
+    remixMessage("🔍 Checking video reference...");
+
+    try {
+
+      const response = await fetch(
+        window.API_BASE_URL + "/api/remix/analyze",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            url,
+            style: remixStyle.value,
+            intensity: remixIntensity.value
+          })
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(
+          data.error || "Reference analysis failed."
+        );
+      }
+
+      remixMessage(
+        "✅ Reference ready! Choose your creative direction and generate the original remix."
+      );
+
+      generateRemixBtn.style.display = "block";
+
+    } catch (error) {
+
+      remixMessage(
+        "❌ " + error.message
+      );
+
+    } finally {
+
+      analyzeRemixBtn.disabled = false;
+      analyzeRemixBtn.textContent =
+        "🔍 Analyze Reference";
+
+    }
+
+  });
+
+
+  generateRemixBtn.addEventListener("click", async () => {
+
+    const url = remixUrl.value.trim();
+
+    if (!url) {
+      remixMessage("❌ Video URL is missing.");
+      return;
+    }
+
+    generateRemixBtn.disabled = true;
+
+    generateRemixBtn.textContent =
+      "⏳ Creating Original Remix...";
+
+    remixMessage(
+      "🎬 Sending your original remix to the Animation AI engine..."
+    );
+
+    try {
+
+      const titleInput =
+        document.getElementById("title");
+
+      const durationInput =
+        document.getElementById("duration");
+
+      const qualityInput =
+        document.getElementById("quality");
+
+      const frameInput =
+        document.getElementById("frameSize");
+
+      const response = await fetch(
+        window.API_BASE_URL + "/api/remix/generate",
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type": "application/json"
+          },
+
+          body: JSON.stringify({
+
+            url,
+
+            title:
+              titleInput?.value ||
+              "Original AI Video Remix",
+
+            style:
+              remixStyle.value,
+
+            intensity:
+              remixIntensity.value,
+
+            prompt:
+              remixPrompt.value,
+
+            duration:
+              durationInput?.value ||
+              "30 seconds",
+
+            quality:
+              qualityInput?.value ||
+              "720p",
+
+            frameSize:
+              frameInput?.value ||
+              "16:9"
+
+          })
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(
+          data.error ||
+          data.message ||
+          "Video generation failed."
+        );
+      }
+
+      remixMessage(
+        "🚀 Generation started successfully!"
+      );
+
+      console.log(
+        "Remix result:",
+        data
+      );
+
+    } catch (error) {
+
+      remixMessage(
+        "❌ " + error.message
+      );
+
+    } finally {
+
+      generateRemixBtn.disabled = false;
+
+      generateRemixBtn.textContent =
+        "🚀 Generate Original Remix";
+
+    }
+
+  });
+
+})();
+
