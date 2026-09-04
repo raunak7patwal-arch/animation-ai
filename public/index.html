@@ -3,60 +3,271 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <title>Animation AI</title>
+
   <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
 
+<div class="background"></div>
+
 <div class="app">
+
   <header>
-    <h1>🎬 Animation AI</h1>
-    <p>Turn your idea into an animated story</p>
+    <div class="logo">🎬</div>
+
+    <div>
+      <h1>Animation AI</h1>
+      <p>Turn your ideas into animated videos</p>
+    </div>
+
+    <div id="serverStatus" class="status">
+      ● Checking Engine...
+    </div>
   </header>
 
+
   <main>
-    <div class="card">
-      <label>✨ Describe your story</label>
-      <textarea id="prompt" placeholder="Example: एक मजेदार लड़का स्कूल में एक अजीब समस्या में फंस जाता है..."></textarea>
+
+    <section class="generator-card">
+
+      <div class="card-title">
+        <span>✨</span>
+        <h2>Create Your Animation</h2>
+      </div>
+
+
+      <label>Video Title</label>
+
+      <input
+        id="title"
+        type="text"
+        placeholder="Example: Funny Robot Adventure"
+      >
+
+
+      <label>Your Story / Prompt</label>
+
+      <textarea
+        id="prompt"
+        placeholder="Describe your animated story here...
+
+Example:
+एक लड़का और उसका funny robot दोस्त स्कूल में मजेदार परिस्थितियों में फंसते हैं..."
+      ></textarea>
+
 
       <div class="options">
+
         <div>
-          <label>⏱ Video Duration</label>
+          <label>Duration</label>
+
           <select id="duration">
-            <option value="5 minutes">5 Minutes</option>
-            <option value="10 minutes">10 Minutes</option>
-          </select>
+<option value="1 minutes">1 Minute — Quick Test</option>
+<option value="5 minutes" selected>5 Minutes — Recommended</option>
+<option value="10 minutes">10 Minutes — Long Video</option>
+<option value="20 minutes">20 Minutes — Extra Long</option>
+</select>
         </div>
+
 
         <div>
-          <label>🎙 Voice Mode</label>
-          <select id="voiceMode">
-            <option value="automatic">🤖 Automatic AI Voice</option>
-            <option value="manual">🎤 Select Manually</option>
+          <label>Quality</label>
+
+          <select id="quality">
+<option value="720p">720p HD — Fast</option>
+<option value="1080p" selected>1080p Full HD — Recommended</option>
+<option value="2K">2K — High Quality</option>
+<option value="4K">4K Ultra HD — Very Slow</option>
+</select>
+        </div>
+
+
+        <div>
+          <label>Frame</label>
+
+          <select id="frameSize">
+            <option value="16:9" selected>16:9 YouTube</option>
+            <option value="9:16">9:16 Shorts</option>
           </select>
         </div>
+
       </div>
 
-      <button id="generateBtn" onclick="generateAnimation()">
-        🚀 Generate Animation
+
+      <button id="generateBtn">
+
+        <span>🚀</span>
+
+        <span>Generate Animation</span>
+
       </button>
-    </div>
 
-    <div class="card hidden" id="progressCard">
-      <h2>🤖 AI Working...</h2>
+    </section>
+
+
+    <!-- PROGRESS -->
+
+    <section id="progressCard" class="progress-card hidden">
+
+      <h2>🎬 Creating Your Animation</h2>
+
+      <p id="progressText">
+        Preparing Animation AI Engine...
+      </p>
+
       <div class="progress-bar">
-        <div id="progress"></div>
-      </div>
-      <p id="status">Preparing your animation...</p>
-    </div>
 
-    <div class="card hidden" id="resultCard">
-      <h2>🎬 Generated Project</h2>
-      <div id="result"></div>
-    </div>
+        <div id="progressFill"></div>
+
+      </div>
+
+      <div id="progressPercent">0%</div>
+
+    </section>
+
+
+    <!-- RESULT -->
+
+    <section id="resultCard" class="result-card hidden">
+
+      <h2>🎉 Your Animation Is Ready!</h2>
+
+      <video
+        id="videoPlayer"
+        controls
+        playsinline
+      ></video>
+
+      <div class="result-actions">
+
+        <a
+          id="downloadBtn"
+          class="download-btn"
+          download
+        >
+          ⬇️ Download Video
+        </a>
+
+        <button id="newVideoBtn">
+          ✨ Create Another Video
+        </button>
+
+      </div>
+
+    </section>
+
+
+    <!-- ERROR -->
+
+    <section id="errorCard" class="error-card hidden">
+
+      <h2>⚠️ Something Went Wrong</h2>
+
+      <p id="errorText"></p>
+
+    </section>
+
   </main>
+
+
+  <footer>
+
+    🎭 Animation AI Engine
+
+    <span>•</span>
+
+    V1 → V10 Pipeline
+
+    <span>•</span>
+
+    Ready
+
+  </footer>
+
 </div>
 
 <script src="app.js"></script>
+
 </body>
 </html>
+
+
+<!-- =========================================================
+     V14 — VIDEO → PARODY
+     ========================================================= -->
+
+<section id="parodyPanel" class="panel parody-panel">
+
+  <div class="panel-title">
+    🎭 Video → Parody
+  </div>
+
+  <p class="panel-subtitle">
+    Paste a video link and create a new original animated parody.
+  </p>
+
+  <label>🔗 Video URL</label>
+
+  <input
+    id="parodyUrl"
+    type="url"
+    placeholder="Paste YouTube / video link here..."
+    autocomplete="off"
+  />
+
+  <div class="parody-grid">
+
+    <div>
+      <label>🎨 Parody Style</label>
+      <select id="parodyStyle">
+        <option value="funny">😂 Funny</option>
+        <option value="anime">⚡ Anime</option>
+        <option value="cartoon">🎨 Cartoon</option>
+        <option value="meme">🤣 Meme</option>
+        <option value="cinematic">🎬 Cinematic</option>
+      </select>
+    </div>
+
+    <div>
+      <label>😂 Comedy Level</label>
+      <select id="parodyComedy">
+        <option value="normal">Normal</option>
+        <option value="high" selected>High</option>
+        <option value="extreme">Extreme</option>
+      </select>
+    </div>
+
+  </div>
+
+  <label>⏱️ Duration</label>
+
+  <select id="parodyDuration">
+    <option value="1 minutes">1 Minute</option>
+    <option value="5 minutes">5 Minutes</option>
+    <option value="10 minutes">10 Minutes</option>
+    <option value="20 minutes">20 Minutes</option>
+  </select>
+
+  <button
+    id="analyzeParodyBtn"
+    class="primary-btn"
+    type="button"
+  >
+    🔍 Analyze Video
+  </button>
+
+  <button
+    id="generateParodyBtn"
+    class="primary-btn"
+    type="button"
+    style="display:none"
+  >
+    🎭 Generate Parody
+  </button>
+
+  <div id="parodyStatus" class="status-box"></div>
+
+</section>

@@ -1,4 +1,27 @@
+# Dependencies
 node_modules/
-server.log
+
+# Environment / secrets
 .env
-npm-debug.log*
+.env.*
+!.env.example
+
+# Generated media
+audio/
+images/
+layers/
+output/
+temp/
+projects/
+
+# Runtime logs
+*.log
+server.log
+
+# Backup files
+backups/
+*.tar.gz
+
+# OS files
+.DS_Store
+Thumbs.db
