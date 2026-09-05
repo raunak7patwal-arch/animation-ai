@@ -1,0 +1,44 @@
+{
+  "id": "e8b52c4fbaa30d81",
+  "prompt": "A young boy walks through a rainy futuristic city and meets an original friendly glowing robot.",
+  "duration": "6 seconds",
+  "freeMode": true,
+  "scenes": [
+    {
+      "number": 1,
+      "duration": 2,
+      "narration": "A young boy walks through a rainy futuristic city and meets an original friendly glowing robot.",
+      "visualPrompt": "Original cinematic animated scene, consistent fictional characters, polished cartoon composition.",
+      "characters": [],
+      "audio": {
+        "narration": true,
+        "music": false,
+        "sfx": false
+      }
+    },
+    {
+      "number": 2,
+      "duration": 2,
+      "narration": "A young boy walks through a rainy futuristic city and meets an original friendly glowing robot.",
+      "visualPrompt": "Original cinematic animated scene, consistent fictional characters, polished cartoon composition.",
+      "characters": [],
+      "audio": {
+        "narration": true,
+        "music": false,
+        "sfx": false
+      }
+    },
+    {
+      "number": 3,
+      "duration": 2,
+      "narration": "A young boy walks through a rainy futuristic city and meets an original friendly glowing robot.",
+      "visualPrompt": "Original cinematic animated scene, consistent fictional characters, polished cartoon composition.",
+      "characters": [],
+      "audio": {
+        "narration": true,
+        "music": false,
+        "sfx": false
+      }
+    }
+  ]
+}

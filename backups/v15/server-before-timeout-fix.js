@@ -1,0 +1,516 @@
+const express = require("express");
+const cors = require("cors");
+const path = require("path");
+
+const { generateVideo } = require("./video-engine");
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+/* ==========================================
+   MIDDLEWARE
+========================================== */
+
+app.use(cors());
+app.use(express.json({ limit: "50mb" }));
+app.use(express.urlencoded({ extended: true }));
+
+/* ==========================================
+   STATIC FILES
+========================================== */
+
+app.use(express.static(path.join(__dirname, "public")));
+
+app.use(
+  "/output",
+  express.static(path.join(__dirname, "output"))
+);
+
+app.use(
+  "/audio",
+  express.static(path.join(__dirname, "audio"))
+);
+
+/* ==========================================
+   HEALTH CHECK
+========================================== */
+
+app.get("/api/status", (req, res) => {
+  res.json({
+    success: true,
+    app: "Animation AI",
+    version: "3.0",
+    status: "online",
+    engines: {
+      story: true,
+      script: true,
+      video: true
+    }
+  });
+});
+
+/* ==========================================
+   STORY GENERATION
+========================================== */
+
+app.post("/generate", (req, res) => {
+  try {
+    const {
+      prompt,
+      duration = "5 minutes",
+      voiceMode = "automatic"
+    } = req.body;
+
+    if (!prompt || !prompt.trim()) {
+      return res.status(400).json({
+        success: false,
+        error: "Please enter a story prompt"
+      });
+    }
+
+    const project = {
+      title: prompt.substring(0, 60),
+      prompt,
+      duration,
+      voiceMode,
+
+      characters: [
+        {
+          id: 1,
+          name: "Aman",
+          role: "Main Character",
+          personality: "Funny and energetic",
+          suggestedVoice: "Funny Male",
+          voice: "Funny Male"
+        },
+        {
+          id: 2,
+          name: "Riya",
+          role: "Friend",
+          personality: "Smart and sarcastic",
+          suggestedVoice: "Funny Female",
+          voice: "Funny Female"
+        },
+        {
+          id: 3,
+          name: "Narrator",
+          role: "Narrator",
+          personality: "Expressive storyteller",
+          suggestedVoice: "Story Narrator",
+          voice: "Story Narrator"
+        }
+      ],
+
+      scenes: [
+        {
+          sceneNumber: 1,
+          type: "Introduction",
+          description: `Story begins: ${prompt}`
+        },
+        {
+          sceneNumber: 2,
+          type: "Problem",
+          description: "A strange and funny problem suddenly appears."
+        },
+        {
+          sceneNumber: 3,
+          type: "Discovery",
+          description: "The characters discover something unexpected."
+        },
+        {
+          sceneNumber: 4,
+          type: "Funny Moment",
+          description: "A funny mistake changes everything."
+        },
+        {
+          sceneNumber: 5,
+          type: "Plan",
+          description: "The characters create a crazy plan."
+        },
+        {
+          sceneNumber: 6,
+          type: "Twist",
+          description: "An unexpected twist surprises everyone."
+        },
+        {
+          sceneNumber: 7,
+          type: "Ending",
+          description: "The story ends with a big funny surprise."
+        }
+      ],
+
+      status: "Story and scenes generated successfully"
+    };
+
+    res.json({
+      success: true,
+      project
+    });
+
+  } catch (error) {
+
+    console.error(error);
+
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/* ==========================================
+   VIDEO GENERATION
+========================================== */
+
+app.post("/generate-video", async (req, res) => {
+
+  try {
+
+    const {
+      title,
+      prompt,
+      duration,
+      quality,
+      frameSize
+    } = req.body;
+
+    if (!prompt || !prompt.trim()) {
+
+      return res.status(400).json({
+        success: false,
+        error: "Prompt is required"
+      });
+
+    }
+
+    console.log("\n====================================");
+    console.log("🎬 VIDEO GENERATION STARTED");
+    console.log("====================================");
+
+    const result = await generateVideo({
+      title: title || "Animation AI Video",
+      prompt,
+      duration: duration || "5 minutes",
+      quality: quality || "1080p",
+      frameSize: frameSize || "16:9"
+    });
+
+    console.log("✅ VIDEO CREATED");
+    console.log(result.videoFile);
+
+    res.json({
+      success: true,
+      message: "Video generated successfully!",
+      project: result
+    });
+
+  } catch (error) {
+
+    console.error("❌ VIDEO GENERATION ERROR");
+    console.error(error);
+
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+
+  }
+
+});
+
+/* ==========================================
+   FRONTEND FALLBACK
+========================================== */
+
+
+
+/* ==========================================
+   START SERVER
+========================================== */
+
+
+// ============================================================
+// V14 — VIDEO → PARODY API
+// ============================================================
+
+app.post("/api/parody/analyze", async (req, res) => {
+  try {
+    const { url, style = "funny", comedy = "high" } = req.body || {};
+
+    if (!url || typeof url !== "string") {
+      return res.status(400).json({
+        success: false,
+        error: "Video URL is required"
+      });
+    }
+
+    if (!/^https?:\/\//i.test(url.trim())) {
+      return res.status(400).json({
+        success: false,
+        error: "Invalid video URL"
+      });
+    }
+
+    return res.json({
+      success: true,
+      mode: "parody",
+      sourceUrl: url.trim(),
+      style,
+      comedy,
+      analysis: {
+        status: "ready",
+        message: "Video reference accepted for transformative parody."
+      }
+    });
+
+  } catch (error) {
+    console.error("V14 parody analyze error:", error);
+
+    return res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+app.post("/api/parody/script", async (req, res) => {
+  try {
+    const {
+      url,
+      style = "funny",
+      comedy = "high",
+      duration = "1 minutes"
+    } = req.body || {};
+
+    if (!url) {
+      return res.status(400).json({
+        success: false,
+        error: "Video URL is required"
+      });
+    }
+
+    const script = {
+      title: "AI Generated Parody",
+      sourceUrl: url,
+      style,
+      comedy,
+      duration,
+
+      rules: [
+        "Create an original parody",
+        "Use newly generated fictional characters",
+        "Use newly generated dialogue",
+        "Use newly generated visuals",
+        "Do not reproduce source footage",
+        "Do not reproduce source audio"
+      ],
+
+      scenes: [
+        {
+          number: 1,
+          type: "intro",
+          instruction: "Create an original comedic introduction."
+        },
+        {
+          number: 2,
+          type: "setup",
+          instruction: "Introduce original characters and the parody situation."
+        },
+        {
+          number: 3,
+          type: "escalation",
+          instruction: "Increase the comedy with an unexpected problem."
+        },
+        {
+          number: 4,
+          type: "chaos",
+          instruction: "Create an exaggerated original comedic sequence."
+        },
+        {
+          number: 5,
+          type: "ending",
+          instruction: "Finish with an original punchline."
+        }
+      ]
+    };
+
+    return res.json({
+      success: true,
+      mode: "parody",
+      script
+    });
+
+  } catch (error) {
+    console.error("V14 parody script error:", error);
+
+    return res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+
+
+
+// ============================================================
+// V15 — ORIGINAL PARODY GENERATOR
+// ============================================================
+
+app.post("/api/parody/generate", async (req, res) => {
+  try {
+    const {
+      url,
+      style = "funny",
+      comedy = "high",
+      duration = "1 minutes",
+      quality = "1080p"
+    } = req.body || {};
+
+    if (!url) {
+      return res.status(400).json({
+        success: false,
+        error: "Video URL is required"
+      });
+    }
+
+    if (!/^https?:\/\/.+/i.test(String(url).trim())) {
+      return res.status(400).json({
+        success: false,
+        error: "Invalid video URL"
+      });
+    }
+
+    const minutes = Math.max(
+      1,
+      Math.min(20, parseInt(String(duration), 10) || 1)
+    );
+
+    // ========================================================
+    // ORIGINAL PARODY CONCEPT
+    // Source media is NOT copied or reused.
+    // ========================================================
+
+    const prompt =
+      `Create a completely original animated parody inspired only by the broad premise of this reference URL: ${url}. ` +
+      `Do not copy source footage, source audio, exact dialogue, characters, logos, or shots. ` +
+      `Style: ${style}. Comedy level: ${comedy}. ` +
+      `Use original characters, original dialogue, original visual composition, ` +
+      `exaggerated reactions, visual comedy and a clear beginning, middle and ending. ` +
+      `Main characters: Milo, an overconfident hero, and Robo, a sarcastic deadpan robot. ` +
+      `The story should escalate into chaos and end with an unexpected funny solution.`;
+
+    // ========================================================
+    // Try to invoke the existing video-generation route
+    // ========================================================
+
+    const port = process.env.PORT || 3000;
+
+    const controller = new AbortController();
+    const timeout = setTimeout(
+      () => controller.abort(),
+      Math.max(120000, minutes * 180000)
+    );
+
+    let pipelineResponse;
+
+    try {
+      pipelineResponse = await fetch(
+        `http://127.0.0.1:${port}/generate-video`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            prompt,
+            duration: `${minutes} minutes`,
+            quality,
+            style,
+            mode: "parody",
+            parody: true
+          }),
+          signal: controller.signal
+        }
+      );
+    } finally {
+      clearTimeout(timeout);
+    }
+
+    const contentType =
+      pipelineResponse.headers.get("content-type") || "";
+
+    let pipelineData;
+
+    if (contentType.includes("application/json")) {
+      pipelineData = await pipelineResponse.json();
+    } else {
+      pipelineData = {
+        success: pipelineResponse.ok,
+        raw: await pipelineResponse.text()
+      };
+    }
+
+    if (!pipelineResponse.ok) {
+      return res.status(500).json({
+        success: false,
+        mode: "parody",
+        error:
+          pipelineData.error ||
+          pipelineData.message ||
+          "Existing video pipeline failed",
+        pipeline: pipelineData
+      });
+    }
+
+    return res.json({
+      success: true,
+      mode: "parody",
+      original: true,
+      requestedDuration: `${minutes} minutes`,
+      quality,
+      sourceUrl: url,
+      pipeline: pipelineData,
+      message:
+        "Original parody generation has been sent to the Animation AI video pipeline."
+    });
+
+  } catch (error) {
+    console.error("❌ Parody pipeline error:", error);
+
+    return res.status(500).json({
+      success: false,
+      mode: "parody",
+      error:
+        error.name === "AbortError"
+          ? "Video generation timed out"
+          : error.message || "Parody generation failed"
+    });
+  }
+});
+
+
+// Frontend fallback — API routes के बाद
+// Express 5 compatible: wildcard route की जरूरत नहीं
+app.use((req, res, next) => {
+  if (req.method !== "GET" && req.method !== "HEAD") {
+    return next();
+  }
+
+  res.sendFile(
+    path.join(__dirname, "public", "index.html")
+  );
+});
+
+app.listen(PORT, "0.0.0.0", () => {
+
+  console.log("\n====================================");
+  console.log("🎬 Animation AI v3.0 is running!");
+  console.log("🌍 Production server enabled");
+  console.log(`📍 Port: ${PORT}`);
+  console.log("🎭 Story Engine: ACTIVE");
+  console.log("📝 Script Engine: ACTIVE");
+  console.log("🎬 Video Engine: ACTIVE");
+  console.log("====================================\n");
+
+});

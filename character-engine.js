@@ -1,293 +1,122 @@
-const fs = require("fs");
-const path = require("path");
-const { execFile } = require("child_process");
-const { promisify } = require("util");
+const fs=require("fs");
+const path=require("path");
+const {execFile}=require("child_process");
 
-const execFileAsync = promisify(execFile);
+const ROOT=process.cwd();
 
-const IMAGE_DIR = path.join(__dirname, "images");
-fs.mkdirSync(IMAGE_DIR, { recursive: true });
+function run(cmd,args=[]){
+  return new Promise((resolve,reject)=>{
+    execFile(cmd,args,{maxBuffer:100*1024*1024},(err,stdout,stderr)=>{
+      if(err){
+        err.stdout=stdout;
+        err.stderr=stderr;
+        reject(err);
+      }else resolve({stdout,stderr});
+    });
+  });
+}
 
-function getScenePose(sceneNumber, width, height) {
-  const groundY = Math.floor(height * 0.78);
+function ensure(d){
+  fs.mkdirSync(d,{recursive:true});
+}
 
-  const poses = [
-    {
-      name: "normal",
-      boyX: 0.28,
-      robotX: 0.72,
-      boyTilt: 0,
-      robotTilt: 0
-    },
-    {
-      name: "surprised",
-      boyX: 0.32,
-      robotX: 0.68,
-      boyTilt: -12,
-      robotTilt: 8
-    },
-    {
-      name: "funny",
-      boyX: 0.25,
-      robotX: 0.75,
-      boyTilt: 10,
-      robotTilt: -10
-    },
-    {
-      name: "scared",
-      boyX: 0.38,
-      robotX: 0.65,
-      boyTilt: -8,
-      robotTilt: 12
-    },
-    {
-      name: "thinking",
-      boyX: 0.30,
-      robotX: 0.70,
-      boyTilt: 5,
-      robotTilt: -5
-    },
-    {
-      name: "action",
-      boyX: 0.42,
-      robotX: 0.62,
-      boyTilt: -15,
-      robotTilt: 15
-    },
-    {
-      name: "celebration",
-      boyX: 0.30,
-      robotX: 0.70,
-      boyTilt: 0,
-      robotTilt: 0
-    }
-  ];
-
-  const pose = poses[(sceneNumber - 1) % poses.length];
-
+function getScenePose(sceneNumber=1,width=1280,height=720){
   return {
-    ...pose,
-    groundY,
-    boyX: Math.floor(width * pose.boyX),
-    robotX: Math.floor(width * pose.robotX)
+    x:Math.round(widtih*0.50),
+    y:Math.round(height*0.58),
+    scale:1,
+    rotation:0,
+    sceneNumber
   };
 }
 
-function buildCharacterFilter(sceneNumber, width, height) {
-  const p = getScenePose(sceneNumber, width, height);
-
-  const g = p.groundY;
-  const bx = p.boyX;
-  const rx = p.robotX;
-
-  const filters = [
-
-    // Ground shadow
-    `drawbox=x=0:y=${g}:w=${width}:h=${height-g}:color=black@0.25:t=fill`,
-
-    // =====================
-    // BOY BODY
-    // =====================
-
-    `drawbox=x=${bx-55}:y=${g-210}:w=110:h=170:color=blue@0.92:t=fill`,
-
-    // Head
-    `drawbox=x=${bx-65}:y=${g-330}:w=130:h=130:color=yellow@0.97:t=fill`,
-
-    // Hair
-    `drawbox=x=${bx-65}:y=${g-330}:w=130:h=28:color=black@0.9:t=fill`,
-
-    // Eyes
-    `drawbox=x=${bx-38}:y=${g-285}:w=18:h=18:color=black:t=fill`,
-    `drawbox=x=${bx+20}:y=${g-285}:w=18:h=18:color=black:t=fill`,
-
-    // =====================
-    // ROBOT
-    // =====================
-
-    // Robot head
-    `drawbox=x=${rx-85}:y=${g-270}:w=170:h=140:color=gray@0.97:t=fill`,
-
-    // Robot body
-    `drawbox=x=${rx-105}:y=${g-130}:w=210:h=120:color=silver@0.97:t=fill`,
-
-    // Robot eyes
-    `drawbox=x=${rx-55}:y=${g-225}:w=32:h=30:color=cyan:t=fill`,
-    `drawbox=x=${rx+23}:y=${g-225}:w=32:h=30:color=cyan:t=fill`,
-
-    // Antenna
-    `drawbox=x=${rx-12}:y=${g-310}:w=24:h=40:color=gray:t=fill`,
-    `drawbox=x=${rx-20}:y=${g-330}:w=40:h=20:color=red:t=fill`
-  ];
-
-  // =====================
-  // SCENE-SPECIFIC POSES
-  // =====================
-
-  switch (p.name) {
-
-    case "normal":
-
-      filters.push(
-        `drawbox=x=${bx-30}:y=${g-240}:w=60:h=10:color=red:t=fill`,
-        `drawbox=x=${bx-95}:y=${g-190}:w=40:h=25:color=yellow:t=fill`,
-        `drawbox=x=${bx+55}:y=${g-190}:w=40:h=25:color=yellow:t=fill`,
-        `drawbox=x=${rx-40}:y=${g-165}:w=80:h=10:color=black:t=fill`
-      );
-
-      break;
-
-    case "surprised":
-
-      filters.push(
-        `drawbox=x=${bx-20}:y=${g-235}:w=40:h=28:color=red:t=fill`,
-        `drawbox=x=${bx-110}:y=${g-250}:w=45:h=25:color=yellow:t=fill`,
-        `drawbox=x=${bx+65}:y=${g-250}:w=45:h=25:color=yellow:t=fill`,
-        `drawbox=x=${rx-25}:y=${g-170}:w=50:h=25:color=black:t=fill`
-      );
-
-      break;
-
-    case "funny":
-
-      filters.push(
-        `drawbox=x=${bx-40}:y=${g-235}:w=80:h=18:color=red:t=fill`,
-        `drawbox=x=${bx-115}:y=${g-170}:w=60:h=22:color=yellow:t=fill`,
-        `drawbox=x=${rx-60}:y=${g-170}:w=120:h=18:color=black:t=fill`
-      );
-
-      break;
-
-    case "scared":
-
-      filters.push(
-        `drawbox=x=${bx-18}:y=${g-240}:w=36:h=35:color=black:t=fill`,
-        `drawbox=x=${bx-100}:y=${g-230}:w=45:h=25:color=yellow:t=fill`,
-        `drawbox=x=${bx+55}:y=${g-230}:w=45:h=25:color=yellow:t=fill`,
-        `drawbox=x=${rx-20}:y=${g-170}:w=40:h=35:color=black:t=fill`
-      );
-
-      break;
-
-    case "thinking":
-
-      filters.push(
-        `drawbox=x=${bx-35}:y=${g-240}:w=55:h=8:color=red:t=fill`,
-        `drawbox=x=${bx+55}:y=${g-270}:w=35:h=90:color=yellow:t=fill`,
-        `drawbox=x=${rx-40}:y=${g-165}:w=80:h=8:color=black:t=fill`
-      );
-
-      break;
-
-    case "action":
-
-      filters.push(
-        `drawbox=x=${bx-130}:y=${g-230}:w=75:h=25:color=yellow:t=fill`,
-        `drawbox=x=${bx+55}:y=${g-150}:w=90:h=25:color=yellow:t=fill`,
-        `drawbox=x=${rx-180}:y=${g-120}:w=75:h=25:color=gray:t=fill`,
-        `drawbox=x=${rx+105}:y=${g-120}:w=75:h=25:color=gray:t=fill`
-      );
-
-      break;
-
-    case "celebration":
-
-      filters.push(
-        `drawbox=x=${bx-100}:y=${g-320}:w=40:h=130:color=yellow:t=fill`,
-        `drawbox=x=${bx+60}:y=${g-320}:w=40:h=130:color=yellow:t=fill`,
-        `drawbox=x=${bx-40}:y=${g-235}:w=80:h=16:color=red:t=fill`,
-
-        `drawbox=x=${rx-150}:y=${g-260}:w=45:h=130:color=gray:t=fill`,
-        `drawbox=x=${rx+105}:y=${g-260}:w=45:h=130:color=gray:t=fill`,
-        `drawbox=x=${rx-55}:y=${g-170}:w=110:h=18:color=black:t=fill`
-      );
-
-      break;
-  }
-
-  // Legs
-  filters.push(
-    `drawbox=x=${bx-48}:y=${g-40}:w=30:h=40:color=blue:t=fill`,
-    `drawbox=x=${bx+18}:y=${g-40}:w=30:h=40:color=blue:t=fill`,
-
-    `drawbox=x=${rx-70}:y=${g-25}:w=35:h=25:color=gray:t=fill`,
-    `drawbox=x=${rx+35}:y=${g-25}:w=35:h=25:color=gray:t=fill`,
-
-    // Ground line
-    `drawbox=x=0:y=${g-3}:w=${width}:h=6:color=white@0.4:t=fill`
-  );
-
-  return filters.join(",");
-}
-
-async function addCharacters({
-  inputFile,
-  outputFile,
+async function makeCharacter(
   sceneNumber,
-  width,
-  height
-}) {
+  outputDir,
+  width=1280,
+  height=720
+){
+  ensure(outputDir);
 
-  const pose = getScenePose(sceneNumber, width, height);
+  const out=
+    path.join(
+      outputDir,
+      `character-${sceneNumber}.png`
+    );
 
-  console.log(
-    `🎭 Scene ${sceneNumber}: ${pose.name.toUpperCase()} pose`
+  const filters=[
+    "drawbox=x=iw*0.43:y=ih*0.43:w=iw*0.14:h=ih*0.22:color=0x35d8ff:t=fill",
+
+    "drawbox=x=iw*0.45:y=ih*0.34:w=iw*0.10:h=ih*0.11:color=0x16283c:t=fill",
+
+    "drawbox=x=iw*0.465:y=ih*0.375:w=iw*0.018:h=ih*0.018:color=white:t=fill",
+
+    "drawbox=x=iw*0.515:y=ih*0.375:w=iw*0.018:h=ih*0.018:color=white:t=fill",
+
+    "drawbox=x=iw*0.47:y=ih*0.405:w=iw*0.06:h=ih*0.008:color=white:t=fill",
+
+    "drawbox=x=iw*0.445:y=ih*0.65:w=iw*0.035:h=ih*0.20:color=0x1a9fca:t=fill",
+
+    "drawbox=x=iw*0.52:y=ih*0.65:w=iw*0.035:h=ih*0.20:color=0x1a9fca:t=fill",
+
+    "drawbox=x=iw*0.38:y=ih*0.48:w=iw*0.05:h=ih*0.12:color=0x247b9b:t=fill",
+
+    "drawbox=x=iw*0.57:y=ih*0.48:w=iw*0.05:h=ih*0.12:color=0x247b9b:t=fill"
+  ].join(",");
+
+  await run(
+    "ffmpeg",
+    [
+      "-y",
+      "-f","lavfi",
+      "-i",`color=c=black:s=${width}x${height}`,
+      "-frames:v","1",
+      "-vf",filters,
+      out
+    ]
   );
 
-  const filter = buildCharacterFilter(
-    sceneNumber,
-    width,
-    height
-  );
+  if(
+    !fs.existsSync(out) ||
+    fs.statSync(out).size<1000
+  ){
+    throw new Error("CHARACTER GENERATION FAILED");
+  }
 
-  await execFileAsync("ffmpeg", [
-    "-y",
-    "-i", inputFile,
-    "-vf", filter,
-    "-frames:v", "1",
-    outputFile
-  ]);
+  return out;
+}
 
-  if (!fs.existsSync(outputFile)) {
-    throw new Error(
-      `Character visual failed for Scene ${sceneNumber}`
+async function addCharacters(options={}){
+  const scenes=
+    Array.isArray(options.scenes)
+      ? options.scenes
+      : [];
+
+  const dir=
+    options.outputDir ||
+    path.join(ROOT,"JARVIS/animation/characters");
+
+  const files=[];
+
+  for(let i=0;i<scenes.length;i++){
+    files.push(
+      await makeCharacter(
+        scenes[i]?.number||i+1,
+        dir,
+        Number(options.width)||1280,
+        Number(options.height)||720
+      )
     );
   }
 
-  return outputFile;
+  return files;
 }
 
-async function generateCharacterVisuals({
-  visualFiles,
-  projectId,
-  width,
-  height
-}) {
-
-  const results = [];
-
-  for (let i = 0; i < visualFiles.length; i++) {
-
-    const outputFile = path.join(
-      IMAGE_DIR,
-      `${projectId}-character-${i + 1}.png`
-    );
-
-    await addCharacters({
-      inputFile: visualFiles[i],
-      outputFile,
-      sceneNumber: i + 1,
-      width,
-      height
-    });
-
-    results.push(outputFile);
-  }
-
-  return results;
+async function generateCharacterVisuals(options={}){
+  return addCharacters(options);
 }
 
-module.exports = {
+module.exports={
   addCharacters,
   generateCharacterVisuals,
   getScenePose

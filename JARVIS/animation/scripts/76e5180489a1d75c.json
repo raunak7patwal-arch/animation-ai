@@ -1,0 +1,43 @@
+{
+  "job": "76e5180489a1d75c",
+  "prompt": "An original young hero enters a futuristic rainy city and meets a friendly glowing robot. They look at each other and walk toward the bright city together.",
+  "free": true,
+  "scenes": [
+    {
+      "number": 1,
+      "duration": 3.33,
+      "narration": "An original young hero enters a futuristic rainy city and meets a friendly glowing robot. They look at each other and walk toward the bright city together.",
+      "visualPrompt": "Original cinematic animated scene, consistent fictional characters, polished cartoon composition.",
+      "characters": [],
+      "audio": {
+        "narration": true,
+        "music": false,
+        "sfx": false
+      }
+    },
+    {
+      "number": 2,
+      "duration": 3.33,
+      "narration": "An original young hero enters a futuristic rainy city and meets a friendly glowing robot. They look at each other and walk toward the bright city together.",
+      "visualPrompt": "Original cinematic animated scene, consistent fictional characters, polished cartoon composition.",
+      "characters": [],
+      "audio": {
+        "narration": true,
+        "music": false,
+        "sfx": false
+      }
+    },
+    {
+      "number": 3,
+      "duration": 3.33,
+      "narration": "An original young hero enters a futuristic rainy city and meets a friendly glowing robot. They look at each other and walk toward the bright city together.",
+      "visualPrompt": "Original cinematic animated scene, consistent fictional characters, polished cartoon composition.",
+      "characters": [],
+      "audio": {
+        "narration": true,
+        "music": false,
+        "sfx": false
+      }
+    }
+  ]
+}

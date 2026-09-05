@@ -1,0 +1,26 @@
+const os=require("os");
+module.exports={
+  name:"JARVIS",
+  free:true,
+  localFirst:true,
+  paidRequired:false,
+  arch:process.arch,
+  platform:process.platform,
+  cpu:os.cpus().length,
+  memoryGB:Math.round(os.totalmem()/1073741824),
+  features:{
+    textToImage:true,
+    textToVideo:true,
+    imageToVideo:true,
+    storyToVideo:true,
+    character:true,
+    voice:true,
+    music:true,
+    sfx:true,
+    subtitles:true,
+    parody:true,
+    durationMin:1,
+    durationMax:1200,
+    resolutions:["1280x720","1920x1080","2560x1440","3840x2160"]
+  }
+};

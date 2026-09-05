@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Animation AI</title>
+
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<div class="background"></div>
+
+<div class="app">
+
+  <header>
+    <div class="logo">🎬</div>
+
+    <div>
+      <h1>Animation AI</h1>
+      <p>Turn your ideas into animated videos</p>
+    </div>
+
+    <div id="serverStatus" class="status">
+      ● Checking Engine...
+    </div>
+  </header>
+
+
+  <main>
+
+    <section class="generator-card">
+
+      <div class="card-title">
+        <span>✨</span>
+        <h2>Create Your Animation</h2>
+      </div>
+
+
+      <label>Video Title</label>
+
+      <input
+        id="title"
+        type="text"
+        placeholder="Example: Funny Robot Adventure"
+      >
+
+
+      <label>Your Story / Prompt</label>
+
+      <textarea
+        id="prompt"
+        placeholder="Describe your animated story here...
+
+Example:
+एक लड़का और उसका funny robot दोस्त स्कूल में मजेदार परिस्थितियों में फंसते हैं..."
+      ></textarea>
+
+
+      <div class="options">
+
+        <div>
+          <label>Duration</label>
+
+          <select id="duration">
+            <option value="30 seconds">30 Seconds</option>
+            <option value="1 minutes" selected>1 Minute</option>
+          </select>
+        </div>
+
+
+        <div>
+          <label>Quality</label>
+
+          <select id="quality">
+            <option value="720p" selected>720p HD</option>
+          </select>
+        </div>
+
+
+        <div>
+          <label>Frame</label>
+
+          <select id="frameSize">
+            <option value="16:9" selected>16:9 YouTube</option>
+            <option value="9:16">9:16 Shorts</option>
+          </select>
+        </div>
+
+      </div>
+
+
+      <button id="generateBtn">
+
+        <span>🚀</span>
+
+        <span>Generate Animation</span>
+
+      </button>
+
+    </section>
+
+
+    <!-- PROGRESS -->
+
+    <section id="progressCard" class="progress-card hidden">
+
+      <h2>🎬 Creating Your Animation</h2>
+
+      <p id="progressText">
+        Preparing Animation AI Engine...
+      </p>
+
+      <div class="progress-bar">
+
+        <div id="progressFill"></div>
+
+      </div>
+
+      <div id="progressPercent">0%</div>
+
+    </section>
+
+
+    <!-- RESULT -->
+
+    <section id="resultCard" class="result-card hidden">
+
+      <h2>🎉 Your Animation Is Ready!</h2>
+
+      <video
+        id="videoPlayer"
+        controls
+        playsinline
+      ></video>
+
+      <div class="result-actions">
+
+        <a
+          id="downloadBtn"
+          class="download-btn"
+          download
+        >
+          ⬇️ Download Video
+        </a>
+
+        <button id="newVideoBtn">
+          ✨ Create Another Video
+        </button>
+
+      </div>
+
+    </section>
+
+
+    <!-- ERROR -->
+
+    <section id="errorCard" class="error-card hidden">
+
+      <h2>⚠️ Something Went Wrong</h2>
+
+      <p id="errorText"></p>
+
+    </section>
+
+  </main>
+
+
+  <footer>
+
+    🎭 Animation AI Engine
+
+    <span>•</span>
+
+    V1 → V10 Pipeline
+
+    <span>•</span>
+
+    Ready
+
+  </footer>
+
+</div>
+
+<script src="app.js"></script>
+
+</body>
+</html>

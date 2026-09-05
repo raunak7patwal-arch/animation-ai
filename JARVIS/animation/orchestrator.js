@@ -1,176 +1,372 @@
-const fs = require("fs");
-const path = require("path");
-const crypto = require("crypto");
-const { spawn } = require("child_process");
+const fs=require("fs");
+const path=require("path");
+const crypto=require("crypto");
+const {execFile}=require("child_process");
 
-const ROOT = path.resolve(__dirname, "../..");
-const BASE = path.join(ROOT, "JARVIS", "animation");
-const OUTPUT = path.join(BASE, "output");
+const ROOT=process.cwd();
+const BASE=path.join(ROOT,"JARVIS/animation");
 
-for (const d of ["scripts","scenes","characters","audio","render","output","temp"])
-  fs.mkdirSync(path.join(BASE,d), {recursive:true});
+const visual=require("../../visual-engine");
+const character=require("../../character-engine");
+const voice=require("../../voice-engine");
+const sceneEngine=require("../../scene-engine");
+const audio=require("./audio-engine");
 
-function id() {
-  return crypto.randomBytes(8).toString("hex");
+const DIRS={
+  temp:path.join(BASE,"temp"),
+  render:path.join(BASE,"render"),
+  output:path.join(BASE,"output"),
+  scripts:path.join(BASE,"scripts"),
+  audio:path.join(BASE,"audio")
+};
+
+for(const d of Object.values(DIRS)){
+  fs.mkdirSync(d,{recursive:true});
 }
 
-function run(cmd,args,options={}) {
+function run(cmd,args=[]){
   return new Promise((resolve,reject)=>{
-    const p = spawn(cmd,args,{stdio:["ignore","pipe","pipe"],...options});
-    let out="",err="";
-    p.stdout.on("data",x=>out+=x);
-    p.stderr.on("data",x=>err+=x);
-    p.on("error",reject);
-    p.on("close",code=>{
-      if(code===0) resolve({out,err});
-      else reject(new Error(`${cmd} failed (${code})\n${err.slice(-3000)}`));
-    });
+    execFile(
+      cmd,
+      args,
+      {
+        maxBuffer:100*1024*1024,
+        timeout:15*60*1000
+      },
+      (err,stdout,stderr)=>{
+        if(err){
+          err.stdout=stdout;
+          err.stderr=stderr;
+          reject(err);
+        }else resolve({stdout,stderr});
+      }
+    );
   });
 }
 
-function safeText(x) {
-  return String(x || "").replace(/[<>]/g,"").trim();
+function id(){
+  return crypto.randomBytes(8).toString("hex");
 }
 
-function makePlan(prompt) {
-  prompt = safeText(prompt);
-
-  const sentences = prompt
-    .split(/[.!?।]+/)
-    .map(x=>x.trim())
-    .filter(Boolean);
-
-  const chunks = sentences.length
-    ? sentences
-    : [prompt || "An original animated story begins."];
-
-  const scenes = chunks.slice(0,20).map((text,i)=>({
-    number:i+1,
-    duration:Math.max(4,Math.min(12,4+Math.ceil(text.length/70))),
-    narration:text,
-    visualPrompt:
-      `Original cinematic animated scene. ${text}. `+
-      `Consistent original characters, expressive acting, clean composition, `+
-      `cinematic lighting, controlled camera movement, polished animation, `+
-      `no logos, no copyrighted characters, no imitation of another creator.`
-  }));
-
-  return {
-    id:id(),
-    title:"JARVIS Animated Story",
-    prompt,
-    style:"original cinematic animation",
-    scenes
-  };
+function sec(v){
+  const n=Number(v);
+  return Number.isFinite(n)&&n>0?n:2;
 }
 
-async function createClip(scene,imageFile,audioFile,outFile) {
-  const duration = String(scene.duration);
+async function render(
+  image,
+  characterImage,
+  narration,
+  music,
+  sfx,
+  scene,
+  out
+){
+  const duration=sec(scene.duration);
+  const frames=Math.max(60,Math.round(duration*30));
 
-  const args = [
+  const args=[
     "-y",
     "-loop","1",
-    "-i",imageFile
+    "-i",image
   ];
 
-  if(audioFile && fs.existsSync(audioFile))
-    args.push("-i",audioFile);
+  if(characterImage){
+    args.push("-i",characterImage);
+  }
+
+  if(narration){
+    args.push("-i",narration);
+  }
+
+  if(music){
+    args.push("-i",music);
+  }
+
+  if(sfx){
+    args.push("-i",sfx);
+  }
+
+  let video;
+
+  if(characterImage){
+    video=
+      `[0:v]scale=1280:720,`+
+      `zoompan=z='min(zoom+0.0018,1.10)':`+
+      `d=${frames}:s=1280x720:fps=30[bg];`+
+      `[1:v]scale=1280:720,`+
+      `format=rgba,`+
+      `zoompan=z='min(zoom+0.0025,1.12)':`+
+      `d=${frames}:s=1280x720:fps=30[char];`+
+      `[bg][char]overlay=0:0:format=auto[v]`;
+  }else{
+    video=
+      `[0:v]scale=1280:720,`+
+      `zoompan=z='min(zoom+0.0018,1.10)':`+
+      `d=${frames}:s=1280x720:fps=30[v]`;
+  }
+
+  const filter=[video];
+
+  const audioInputs=[];
+
+  let next=1;
+
+  if(characterImage) next++;
+
+  if(narration){
+    audioInputs.push(`[${next}:a]volume=1.0[n]`);
+    next++;
+  }
+
+  if(music){
+    audioInputs.push(`[${next}:a]volume=0.16[m]`);
+    next++;
+  }
+
+  if(sfx){
+    audioInputs.push(`[${next}:a]volume=0.08[s]`);
+    next++;
+  }
+
+  if(audioInputs.length){
+    filter.push(audioInputs.join(";"));
+
+    const mix=[];
+
+    if(narration) mix.push("[n]");
+    if(music) mix.push("[m]");
+    if(sfx) mix.push("[s]");
+
+    filter.push(
+      `${mix.join("")}amix=inputs=${mix.length}:duration=longest:dropout_transition=2[a]`
+    );
+  }
 
   args.push(
-    "-t",duration,
-    "-vf",
-    "scale=1280:720:force_original_aspect_ratio=decrease,"+
-    "pad=1280:720:(ow-iw)/2:(oh-ih)/2,"+
-    "zoompan=z='min(zoom+0.0008,1.10)':d=300:s=1280x720:fps=30,"+
-    "format=yuv420p",
+    "-filter_complex",
+    filter.join(";")
+  );
+
+  args.push(
+    "-map","[v]"
+  );
+
+  if(audioInputs.length){
+    args.push("-map","[a]");
+  }
+
+  args.push(
+    "-t",String(duration),
     "-r","30",
     "-c:v","libx264",
     "-preset","veryfast",
-    "-crf","20"
+    "-crf","21",
+    "-pix_fmt","yuv420p"
   );
 
-  if(audioFile && fs.existsSync(audioFile))
-    args.push("-c:a","aac","-b:a","192k","-shortest");
-  else
+  if(audioInputs.length){
+    args.push(
+      "-c:a","aac",
+      "-b:a","160k"
+    );
+  }else{
     args.push("-an");
-
-  args.push(outFile);
-
-  await run("ffmpeg",args);
-}
-
-async function concat(files,out) {
-  const list = path.join(BASE,"temp",`${id()}.txt`);
-  fs.writeFileSync(
-    list,
-    files.map(f=>`file '${f.replace(/'/g,"'\\''")}'`).join("\n")
-  );
-
-  await run("ffmpeg",[
-    "-y","-f","concat","-safe","0",
-    "-i",list,
-    "-c","copy",
-    out
-  ]);
-
-  fs.unlinkSync(list);
-}
-
-async function generate(prompt, options={}) {
-  const plan = makePlan(prompt);
-
-  const planFile = path.join(BASE,"scripts",`${plan.id}.json`);
-  fs.writeFileSync(planFile,JSON.stringify(plan,null,2));
-
-  const clips=[];
-
-  for(const scene of plan.scenes) {
-    const sceneDir = path.join(BASE,"scenes",String(scene.number));
-    fs.mkdirSync(sceneDir,{recursive:true});
-
-    /*
-      The existing project's visual/character/voice engines
-      can supply real assets here.
-      If an engine returns an asset, use it.
-      Otherwise create a deterministic animated placeholder
-      so the render pipeline never hangs.
-    */
-
-    const image = path.join(sceneDir,"scene.png");
-
-    if(!fs.existsSync(image)) {
-      await run("ffmpeg",[
-        "-y",
-        "-f","lavfi",
-        "-i",`color=c=0x202020:s=1280x720:d=1`,
-        "-frames:v","1",
-        image
-      ]);
-    }
-
-    const clip = path.join(BASE,"render",`scene-${scene.number}.mp4`);
-
-    const audio = options.audioFiles?.[scene.number-1];
-
-    await createClip(scene,image,audio,clip);
-    clips.push(clip);
   }
 
-  const final = path.join(
-    OUTPUT,
-    `jarvis-animation-${plan.id}.mp4`
+  args.push(
+    "-movflags","+faststart",
+    out
   );
 
-  await concat(clips,final);
+  await run("ffmpeg",args);
+
+  if(
+    !fs.existsSync(out) ||
+    fs.statSync(out).size<10000
+  ){
+    throw new Error("SCENE RENDER FAILED");
+  }
+
+  return out;
+}
+
+async function concat(files,out){
+  const list=
+    path.join(
+      DIRS.temp,
+      `concat-${Date.now()}.txt`
+    );
+
+  fs.writeFileSync(
+    list,
+    files
+      .map(x=>`file '${x.replace(/'/g,"'\\''")}'`)
+      .join("\n")
+  );
+
+  await run(
+    "ffmpeg",
+    [
+      "-y",
+      "-f","concat",
+      "-safe","0",
+      "-i",list,
+      "-c","copy",
+      out
+    ]
+  );
+}
+
+async function generate(prompt,options={}){
+  const job=id();
+
+  const scenes=
+    sceneEngine.createScenes({
+      prompt,
+      duration:options.duration||"10 seconds"
+    });
+
+  fs.writeFileSync(
+    path.join(DIRS.scripts,`${job}.json`),
+    JSON.stringify(
+      {
+        job,
+        prompt,
+        free:true,
+        scenes
+      },
+      null,
+      2
+    )
+  );
+
+  console.log("🧠 STORY ............ OK");
+
+  const visuals=
+    await visual.generateSceneVisuals({
+      scenes,
+      outputDir:DIRS.temp,
+      width:1280,
+      height:720,
+      jobId:job
+    });
+
+  console.log("🎨 VISUALS .......... OK");
+
+  const chars=
+    await character.generateCharacterVisuals({
+      scenes,
+      outputDir:path.join(BASE,"characters"),
+      width:1280,
+      height:720,
+      jobId:job
+    });
+
+  console.log("👤 CHARACTERS ....... OK");
+
+  const voices=
+    await voice.generateSceneVoices({
+      scenes,
+      outputDir:DIRS.audio,
+      jobId:job
+    });
+
+  console.log("🎙️ VOICE ............ OK");
+
+  const totalSeconds=
+    scenes.reduce(
+      (a,s)=>a+sec(s.duration),
+      0
+    );
+
+  const bgAudio=
+    await audio.createAudio(
+      Math.max(1,totalSeconds),
+      job
+    );
+
+  console.log("🎵 MUSIC/SFX ........ OK");
+
+  const renders=[];
+
+  for(let i=0;i<scenes.length;i++){
+
+    const scene=scenes[i];
+
+    const out=
+      path.join(
+        DIRS.render,
+        `${job}-scene-${i+1}.mp4`
+      );
+
+    await render(
+      visuals[i],
+      chars[i]||null,
+      voices[i]||null,
+      bgAudio.music,
+      bgAudio.sfx,
+      scene,
+      out
+    );
+
+    renders.push(out);
+
+    console.log(
+      `🎬 SCENE ${i+1}/${scenes.length} OK`
+    );
+  }
+
+  const raw=
+    path.join(
+      DIRS.output,
+      `${job}-raw.mp4`
+    );
+
+  await concat(renders,raw);
+
+  const final=
+    path.join(
+      DIRS.output,
+      `jarvis-animation-${job}.mp4`
+    );
+
+  await run(
+    "ffmpeg",
+    [
+      "-y",
+      "-i",raw,
+      "-c:v","libx264",
+      "-preset","veryfast",
+      "-crf","19",
+      "-pix_fmt","yuv420p",
+      "-movflags","+faststart",
+      final
+    ]
+  );
+
+  if(
+    !fs.existsSync(final) ||
+    fs.statSync(final).size<20000
+  ){
+    throw new Error("FINAL MP4 VALIDATION FAILED");
+  }
 
   return {
     success:true,
-    jobId:plan.id,
+    free:true,
+    paidProvider:false,
+    hfRequired:false,
+    jobId:job,
+    scenes:scenes.length,
     videoFile:`/jarvis-animation/${path.basename(final)}`,
     localFile:final,
-    scenes:plan.scenes.length,
-    planFile
+    visualFiles:visuals,
+    characterFiles:chars,
+    voiceFiles:voices,
+    music:bgAudio.music,
+    sfx:bgAudio.sfx
   };
 }
 
-module.exports = {generate};
+module.exports={generate};

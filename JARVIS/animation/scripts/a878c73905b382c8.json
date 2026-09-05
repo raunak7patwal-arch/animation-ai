@@ -1,0 +1,14 @@
+{
+  "id": "a878c73905b382c8",
+  "title": "JARVIS Animated Story",
+  "prompt": "एक छोटा सा original cartoon scene बनाओ जिसमें एक लड़का बारिश में शहर की सड़क पर चलता है और फिर एक चमकता हुआ रोबोट उससे मिलता है।",
+  "style": "original cinematic animation",
+  "scenes": [
+    {
+      "number": 1,
+      "duration": 6,
+      "narration": "एक छोटा सा original cartoon scene बनाओ जिसमें एक लड़का बारिश में शहर की सड़क पर चलता है और फिर एक चमकता हुआ रोबोट उससे मिलता है",
+      "visualPrompt": "Original cinematic animated scene. एक छोटा सा original cartoon scene बनाओ जिसमें एक लड़का बारिश में शहर की सड़क पर चलता है और फिर एक चमकता हुआ रोबोट उससे मिलता है. Consistent original characters, expressive acting, clean composition, cinematic lighting, controlled camera movement, polished animation, no logos, no copyrighted characters, no imitation of another creator."
+    }
+  ]
+}

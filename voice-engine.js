@@ -1,109 +1,134 @@
-const fs = require("fs");
-const path = require("path");
-const { execFile } = require("child_process");
-const { promisify } = require("util");
+const fs=require("fs");
+const path=require("path");
+const {execFile}=require("child_process");
 
-const execFileAsync = promisify(execFile);
+const ROOT=process.cwd();
 
-const AUDIO_DIR = path.join(__dirname, "audio");
-fs.mkdirSync(AUDIO_DIR, { recursive: true });
-
-function cleanText(text) {
-  return String(text || "")
-    .replace(/\s+/g, " ")
-    .trim();
+function run(cmd,args=[]){
+  return new Promise((resolve,reject)=>{
+    execFile(cmd,args,{maxBuffer:50*1024*1024},(err,stdout,stderr)=>{
+      if(err){
+        err.stdout=stdout;
+        err.stderr=stderr;
+        reject(err);
+      }else resolve({stdout,stderr});
+    });
+  });
 }
 
-function getVoiceSettings(character) {
-  const voices = {
-    narrator: {
-      speed: 145,
-      pitch: 50
-    },
-    funnyMale: {
-      speed: 165,
-      pitch: 55
-    },
-    funnyFemale: {
-      speed: 175,
-      pitch: 70
-    }
-  };
-
-  return voices[character] || voices.narrator;
+function ensure(d){
+  fs.mkdirSync(d,{recursive:true});
 }
 
-async function generateVoice({
-  text,
-  fileName,
-  character = "narrator"
-}) {
+async function generateVoice(options={}){
+  const text=
+    options.text ||
+    options.narration ||
+    options.scene?.narration ||
+    "JARVIS generated narration.";
 
-  const settings = getVoiceSettings(character);
+  const number=
+    Number(
+      options.sceneNumber ||
+      options.scene?.number ||
+      1
+    );
 
-  const outputFile = path.join(
-    AUDIO_DIR,
-    fileName
+  const dir=
+    options.outputDir ||
+    path.join(ROOT,"JARVIS/animation/audio");
+
+  ensure(dir);
+
+  const output=
+    path.join(dir,`scene-${number}.wav`);
+
+  const piper=
+    process.env.PIPER_BIN ||
+    path.join(ROOT,"tools/piper/piper");
+
+  const model=
+    process.env.PIPER_MODEL ||
+    path.join(ROOT,"models/en_US-lessac-medium.onnx");
+
+  if(
+    fs.existsSync(piper) &&
+    fs.existsSync(model)
+  ){
+    try{
+      await run(
+        piper,
+        [
+          "--model",model,
+          "--output_file",output
+        ]
+      );
+
+      if(
+        fs.existsSync(output) &&
+        fs.statSync(output).size>5000
+      ){
+        console.log("🎙️ PIPER:",number);
+        return output;
+      }
+    }catch(e){}
+  }
+
+  console.log("🎙️ ESPEAK NG:",number);
+
+  await run(
+    "espeak-ng",
+    [
+      "-v","en-us",
+      "-s","155",
+      "-p","45",
+      "-a","170",
+      "-w",output,
+      String(text)
+    ]
   );
 
-  const clean = cleanText(text);
-
-  if (!clean) {
-    throw new Error("Voice text is empty");
+  if(
+    !fs.existsSync(output) ||
+    fs.statSync(output).size<1000
+  ){
+    throw new Error("VOICE GENERATION FAILED");
   }
 
-  console.log("🎙️ Generating voice:", fileName);
-
-  await execFileAsync("espeak", [
-    "-s", String(settings.speed),
-    "-p", String(settings.pitch),
-    "-w", outputFile,
-    clean
-  ]);
-
-  if (!fs.existsSync(outputFile)) {
-    throw new Error("Voice file was not created");
-  }
-
-  return outputFile;
+  return output;
 }
 
-async function generateSceneVoices({
-  scenes,
-  projectId
-}) {
+async function generateSceneVoices(options={}){
+  const scenes=
+    Array.isArray(options.scenes)
+      ? options.scenes
+      : [];
 
-  const audioFiles = [];
+  const dir=
+    options.outputDir ||
+    path.join(ROOT,"JARVIS/animation/audio");
 
-  for (let i = 0; i < scenes.length; i++) {
+  const files=[];
 
-    const scene = scenes[i];
-
-    const character =
-      i % 3 === 0
-        ? "funnyMale"
-        : i % 3 === 1
-          ? "funnyFemale"
-          : "narrator";
-
-    const text =
-      scene.text ||
-      scene.description ||
-      `Scene ${i + 1}`;
-
-    const file = await generateVoice({
-      text,
-      fileName: `${projectId}-scene-${i + 1}.wav`,
-      character
-    });
-
-    audioFiles.push(file);
+  for(let i=0;i<scenes.length;i++){
+    files.push(
+      await generateVoice({
+        scene:scenes[i],
+        sceneNumber:
+          scenes[i]?.number||i+1,
+        narration:
+          scenes[i]?.narration ||
+          scenes[i]?.text ||
+          "",
+        outputDir:dir
+      })
+    );
   }
 
-  return audioFiles;
+  return files;
 }
 
-module.exports = {
+module.exports={
   generateVoice,
   generateSceneVoices
 };

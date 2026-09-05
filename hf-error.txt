@@ -1,0 +1,5 @@
+Starting real AI video generation...
+Model: Wan-AI/Wan2.2-TI2V-5B
+Provider: fal-ai
+VIDEO_TEST_FAILED
+Failed to perform inference: You have depleted your monthly included credits. Purchase pre-paid credits to continue using Inference Providers. Alternatively, subscribe to PRO to get 20x more included usage.

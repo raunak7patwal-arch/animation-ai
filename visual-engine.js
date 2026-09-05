@@ -1,171 +1,170 @@
-const fs = require("fs");
-const path = require("path");
-const { execFile } = require("child_process");
-const { promisify } = require("util");
-const { InferenceClient } = require("@huggingface/inference");
+const fs=require("fs");
+const path=require("path");
+const {execFile}=require("child_process");
 
-const execFileAsync = promisify(execFile);
+const ROOT=process.cwd();
 
-const IMAGE_DIR = path.join(__dirname, "images");
-fs.mkdirSync(IMAGE_DIR, { recursive: true });
-
-function escapeDrawText(text) {
-  return String(text || "")
-    .replace(/\\/g, "\\\\")
-    .replace(/:/g, "\\:")
-    .replace(/'/g, "\\'")
-    .replace(/,/g, "\\,")
-    .replace(/\n/g, " ");
+function run(cmd,args=[]){
+  return new Promise((resolve,reject)=>{
+    execFile(cmd,args,{maxBuffer:100*1024*1024},(err,stdout,stderr)=>{
+      if(err){
+        err.stdout=stdout;
+        err.stderr=stderr;
+        reject(err);
+      }else{
+        resolve({stdout,stderr});
+      }
+    });
+  });
 }
 
-function getAspectRatio(width, height) {
-  if (height > width) return "portrait composition, vertical 9:16";
-  if (width === height) return "square composition, 1:1";
-  return "widescreen cinematic composition, horizontal 16:9";
+function ensure(d){
+  fs.mkdirSync(d,{recursive:true});
 }
 
-function buildPrompt(scene, width, height) {
-  const description =
+function esc(v){
+  return String(v||"")
+    .replace(/\\/g,"\\\\")
+    .replace(/'/g,"\\'")
+    .replace(/:/g,"\\:")
+    .replace(/\[/g,"\\[")
+    .replace(/\]/g,"\\]");
+}
+
+async function createSceneVisual(options={}){
+  const scene=options.scene||{};
+  const n=Number(scene.number||options.sceneNumber||1);
+
+  const width=1280;
+  const height=720;
+
+  const dir=
+    options.outputDir ||
+    path.join(ROOT,"JARVIS/animation/temp");
+
+  ensure(dir);
+
+  const out=
+    path.join(
+      dir,
+      `scene-${n}-cinematic.png`
+    );
+
+  const prompt=String(
     scene.visualPrompt ||
     scene.description ||
-    scene.text ||
-    "";
+    scene.narration ||
+    "Original cinematic animation"
+  ).slice(0,90);
 
-  return `
-High quality cinematic 3D animated movie scene.
-${getAspectRatio(width, height)}.
-Scene: ${description}
-Colorful professional animation, expressive characters,
-detailed environment, cinematic lighting, consistent visual style,
-clean composition, no text, no subtitles, no watermark.
-`;
-}
+  const text=esc(prompt);
 
-async function createFallbackVisual({
-  scene,
-  projectId,
-  width,
-  height
-}) {
-  const imageFile = path.join(
-    IMAGE_DIR,
-    `${projectId}-scene-${scene.number}-fallback.png`
-  );
+  /*
+   * IMPORTANT:
+   * All geometry uses explicit 1280x720 coordinates.
+   * No iw/ih/h expressions are used for positioning.
+   * This avoids FFmpeg expression compatibility problems.
+   */
 
-  const title = escapeDrawText(scene.title || `Scene ${scene.number}`);
-  const description = escapeDrawText(
-    scene.visualPrompt ||
-    scene.description ||
-    scene.text ||
-    ""
-  );
+  const filters=[
+    "drawbox=x=0:y=0:w=1280:h=720:color=0x08111f:t=fill",
 
-  const fontSize = Math.max(32, Math.floor(width / 22));
-  const smallFont = Math.max(20, Math.floor(width / 45));
+    "drawbox=x=0:y=346:w=1280:h=374:color=0x101827:t=fill",
 
-  console.log(`⚠️ Creating fallback visual for Scene ${scene.number}`);
+    "drawbox=x=0:y=446:w=1280:h=274:color=0x070b12:t=fill",
 
-  await execFileAsync("ffmpeg", [
-    "-y",
-    "-f", "lavfi",
-    "-i",
-    `color=c=0x16213e:s=${width}x${height}`,
-    "-frames:v",
-    "1",
-    "-vf",
+    "drawbox=x=64:y=216:w=154:h=230:color=0x17253a:t=fill",
+
+    "drawbox=x=256:y=144:w=192:h=302:color=0x1b2d45:t=fill",
+
+    "drawbox=x=499:y=245:w=166:h=202:color=0x16263c:t=fill",
+
+    "drawbox=x=717:y=130:w=218:h=317:color=0x1b2a42:t=fill",
+
+    "drawbox=x=986:y=202:w=179:h=245:color=0x16263b:t=fill",
+
+    "drawbox=x=115:y=259:w=18:h=28:color=0xffd166@0.75:t=fill",
+
+    "drawbox=x=307:y=216:w=18:h=30:color=0x4cc9f0@0.75:t=fill",
+
+    "drawbox=x=550:y=288:w=18:h=26:color=0xffd166@0.75:t=fill",
+
+    "drawbox=x=781:y=194:w=18:h=32:color=0x4cc9f0@0.75:t=fill",
+
+    "drawbox=x=1037:y=259:w=18:h=30:color=0xffd166@0.75:t=fill",
+
+    "drawbox=x=995:y=72:w=90:h=90:color=0xeaf6ff@0.90:t=fill",
+
+    "drawbox=x=589:y=324:w=102:h=166:color=0x39d5ff@0.92:t=fill",
+
+    "drawbox=x=608:y=288:w=64:h=58:color=0x0a1422:t=fill",
+
+    "drawbox=x=617:y=306:w=15:h=13:color=white:t=fill",
+
+    "drawbox=x=646:y=306:w=15:h=13:color=white:t=fill",
+
+    "drawbox=x=621:y=340:w=38:h=6:color=white@0.85:t=fill",
+
+    "drawbox=x=621:y=374:w=45:h=58:color=0x07101c:t=fill",
+
+    "drawbox=x=0:y=562:w=1280:h=3:color=0x4cc9f0@0.20:t=fill",
+
+    "drawtext=text='JARVIS':fontcolor=white@0.35:fontsize=22:x=42:y=35",
+
+    `drawtext=text='${text}':fontcolor=white@0.65:fontsize=24:x=45:y=650`
+  ].join(",");
+
+  await run(
+    "ffmpeg",
     [
-      `drawbox=x=0:y=0:w=iw:h=ih:color=black@0.20:t=fill`,
-      `drawbox=x=80:y=80:w=iw-160:h=ih-160:color=white@0.08:t=fill`,
-      `drawtext=text='${title}':fontcolor=white:fontsize=${fontSize}:x=(w-text_w)/2:y=h*0.40`,
-      `drawtext=text='${description}':fontcolor=white@0.80:fontsize=${smallFont}:x=(w-text_w)/2:y=h*0.55`
-    ].join(","),
-    imageFile
-  ]);
-
-  return imageFile;
-}
-
-async function createSceneVisual({
-  scene,
-  projectId,
-  width,
-  height
-}) {
-  const imageFile = path.join(
-    IMAGE_DIR,
-    `${projectId}-scene-${scene.number}.jpg`
+      "-y",
+      "-f","lavfi",
+      "-i","color=c=black:s=1280x720:r=25",
+      "-frames:v","1",
+      "-vf",filters,
+      "-frames:v","1",
+      "-update","1",
+      out
+    ]
   );
 
-  try {
-    if (!process.env.HF_TOKEN) {
-      throw new Error("HF_TOKEN is missing");
-    }
-
-    console.log(`🤖 AI generating Scene ${scene.number}...`);
-
-    const client = new InferenceClient(process.env.HF_TOKEN);
-
-    const imageBlob = await client.textToImage({
-      provider: "hf-inference",
-      model: "stabilityai/stable-diffusion-3-medium-diffusers",
-      inputs: buildPrompt(scene, width, height)
-    });
-
-    const buffer = Buffer.from(await imageBlob.arrayBuffer());
-
-    if (buffer.length < 1000) {
-      throw new Error(`Invalid AI image response: ${buffer.length} bytes`);
-    }
-
-    fs.writeFileSync(imageFile, buffer);
-
-    console.log(
-      `✅ AI Scene ${scene.number} created (${buffer.length} bytes)`
-    );
-
-    return imageFile;
-
-  } catch (error) {
-
-    console.error(
-      `⚠️ AI generation failed for Scene ${scene.number}:`,
-      error.message
-    );
-    console.error("🔍 Full error:", error);
-    console.error("🔍 Cause:", error.cause);
-
-    return await createFallbackVisual({
-      scene,
-      projectId,
-      width,
-      height
-    });
-  }
-}
-
-async function generateSceneVisuals({
-  scenes,
-  projectId,
-  width,
-  height
-}) {
-  const visuals = [];
-
-  for (const scene of scenes) {
-    const file = await createSceneVisual({
-      scene,
-      projectId,
-      width,
-      height
-    });
-
-    visuals.push(file);
+  if(
+    !fs.existsSync(out) ||
+    fs.statSync(out).size<2000
+  ){
+    throw new Error("VISUAL GENERATION FAILED");
   }
 
-  return visuals;
+  return out;
 }
 
-module.exports = {
+async function generateSceneVisuals(options={}){
+  const scenes=
+    Array.isArray(options.scenes)
+      ? options.scenes
+      : [];
+
+  const files=[];
+
+  for(let i=0;i<scenes.length;i++){
+    files.push(
+      await createSceneVisual({
+        ...options,
+        scene:scenes[i],
+        sceneNumber:scenes[i]?.number||i+1
+      })
+    );
+  }
+
+  return files;
+}
+
+async function createFallbackVisual(options={}){
+  return createSceneVisual(options);
+}
+
+module.exports={
   createSceneVisual,
-  generateSceneVisuals
+  generateSceneVisuals,
+  createFallbackVisual
 };

@@ -1,0 +1,120 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #0b1020;
+  color: white;
+}
+
+.app {
+  max-width: 900px;
+  margin: auto;
+  padding: 25px 15px;
+}
+
+header {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+header h1 {
+  font-size: 36px;
+  margin-bottom: 8px;
+}
+
+header p {
+  color: #aab3cc;
+}
+
+.card {
+  background: #151c33;
+  padding: 25px;
+  border-radius: 18px;
+  margin-bottom: 20px;
+}
+
+label {
+  display: block;
+  margin-bottom: 10px;
+  font-weight: bold;
+}
+
+textarea,
+select {
+  width: 100%;
+  background: #0d1326;
+  color: white;
+  border: 1px solid #293250;
+  border-radius: 10px;
+  padding: 14px;
+  font-size: 16px;
+}
+
+textarea {
+  height: 160px;
+  resize: vertical;
+}
+
+.options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+  margin-top: 20px;
+}
+
+button {
+  width: 100%;
+  margin-top: 25px;
+  padding: 16px;
+  border: none;
+  border-radius: 12px;
+  font-size: 17px;
+  font-weight: bold;
+  cursor: pointer;
+  background: #6c63ff;
+  color: white;
+}
+
+button:active {
+  transform: scale(0.98);
+}
+
+.progress-bar {
+  width: 100%;
+  height: 18px;
+  background: #0d1326;
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+#progress {
+  height: 100%;
+  width: 0%;
+  background: #6c63ff;
+  transition: width 0.4s;
+}
+
+.hidden {
+  display: none;
+}
+
+#result {
+  background: #0d1326;
+  padding: 18px;
+  border-radius: 12px;
+  white-space: pre-wrap;
+  line-height: 1.6;
+}
+
+@media (max-width: 600px) {
+  .options {
+    grid-template-columns: 1fr;
+  }
+
+  header h1 {
+    font-size: 28px;
+  }
+}

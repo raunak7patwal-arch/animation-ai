@@ -1,0 +1,26 @@
+<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>JARVIS</title><style>
+body{margin:0;background:#090b10;color:#fff;font-family:Arial;padding:18px}
+h1{font-size:32px}textarea,select,input,button{width:100%;box-sizing:border-box;margin:7px 0;padding:13px;border-radius:10px;border:1px solid #333;background:#151922;color:#fff}
+button{background:#2563eb;border:0;font-weight:bold}.row{display:grid;grid-template-columns:1fr 1fr;gap:8px}.card{background:#11151d;padding:15px;border-radius:15px;margin-bottom:12px}
+#status{white-space:pre-wrap}
+</style></head><body>
+<h1>JARVIS</h1>
+<div class="card">
+<textarea id="p" rows="6" placeholder="अपनी वीडियो का prompt लिखें..."></textarea>
+<div class="row">
+<select id="d"><option value="60">1 मिनट</option><option value="120">2 मिनट</option><option value="300">5 मिनट</option><option value="600">10 मिनट</option><option value="1200">20 मिनट</option></select>
+<select id="q"><option value="1280x720">HD 720p</option><option value="1920x1080">Full HD 1080p</option><option value="2560x1440">1440p</option><option value="3840x2160">4K UHD</option></select>
+</div>
+<button onclick="gen()">GENERATE VIDEO</button>
+<button onclick="img()">GENERATE IMAGE</button>
+<button onclick="parody()">CREATE ORIGINAL PARODY</button>
+</div>
+<div class="card"><b>Status</b><div id="status">JARVIS READY</div></div>
+<script>
+async function post(url,data){let r=await fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(data)});return r.json()}
+async function gen(){status("Generating...");status(JSON.stringify(await post("/api/jarvis/video",{prompt:p.value,duration:+d.value,resolution:q.value,quality:q.options[q.selectedIndex].text}),null,2))}
+async function img(){status("Generating image...");status(JSON.stringify(await post("/api/jarvis/image",{prompt:p.value}),null,2))}
+async function parody(){status("Creating original parody...");status(JSON.stringify(await post("/api/parody/generate",{prompt:p.value,duration:+d.value,resolution:q.value}),null,2))}
+function status(x){document.getElementById("status").textContent=typeof x==="string"?x:JSON.stringify(x,null,2)}
+</script></body></html>

@@ -903,3 +903,8 @@ app.listen(PORT, "0.0.0.0", () => {
   console.log("====================================\n");
 
 });
+try{
+ const jarvisAPI=require("./JARVIS/api/jarvis-api");
+ app.use(jarvisAPI);
+}catch(e){console.error("JARVIS API:",e.message)}
+try{app.use(require("./JARVIS/api/final-api"))}catch(e){console.error("JARVIS:",e.message)}
