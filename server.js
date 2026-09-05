@@ -842,6 +842,22 @@ app.post("/api/parody/generate", async (req, res) => {
 });
 
 
+
+/* ============================================================
+   API JSON SAFETY GUARD
+   API endpoints must NEVER fall through to HTML.
+   ============================================================ */
+app.use("/api", (req, res, next) => {
+  if (req.method !== "GET" && req.method !== "HEAD") {
+    return res.status(404).json({
+      success: false,
+      error: `API endpoint not found: ${req.method} ${req.path}`,
+      api: true
+    });
+  }
+  return next();
+});
+
 // Frontend fallback — API routes के बाद
 // Express 5 compatible: wildcard route की जरूरत नहीं
 app.use((req, res, next) => {
