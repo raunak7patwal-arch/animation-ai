@@ -1,8 +1,10 @@
 {
   "appId": "com.aditybhat.animationai",
-  "appName":"JARVIS",
+  "appName": "JARVIS",
   "webDir": "public",
   "server": {
-    "androidScheme": "https"
+    "androidScheme": "https",
+    "url": "http://127.0.0.1:3000",
+    "cleartext": true
   }
 }
