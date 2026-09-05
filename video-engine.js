@@ -1,3 +1,7 @@
+// SPEED CONFIG LOADED — existing pipeline preserved
+const SPEED_CONFIG = require("./speed-config");
+const { fastEncode, chooseEncoder } = require("./fast-render");
+
 const fs = require("fs");
 const path = require("path");
 const { execFile } = require("child_process");

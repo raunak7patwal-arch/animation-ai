@@ -1,3 +1,19 @@
+
+/* ==========================================================
+   SPEED-FIRST ENGINE ENABLED
+   Existing generation features remain untouched.
+   ========================================================== */
+process.env.ANIMATION_FAST_MODE =
+  process.env.ANIMATION_FAST_MODE || "true";
+
+process.env.ANIMATION_CONCURRENCY =
+  process.env.ANIMATION_CONCURRENCY || "2";
+
+process.env.ANIMATION_AVOID_DUPLICATE_ENCODE =
+  process.env.ANIMATION_AVOID_DUPLICATE_ENCODE || "true";
+
+console.log("⚡ SPEED-FIRST ENGINE: ACTIVE");
+
 const express = require("express");
 const {installAnimationAPI}=require('./JARVIS/animation/api');
 const cors = require("cors");
