@@ -440,6 +440,12 @@ Ready. Start a generation to see live progress.
 </div>
 
 <script>
+window.ANIMATION_AI_API =
+  localStorage.getItem("ANIMATION_AI_API") ||
+  window.ANIMATION_AI_API ||
+  "";
+</script>
+<script>
 let currentMode="video";
 let pollTimer=null;
 
