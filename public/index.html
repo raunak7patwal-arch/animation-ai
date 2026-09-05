@@ -1,30 +1,630 @@
-<!doctype html><html><head>
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>JARVIS</title>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>Animation AI Studio</title>
+
 <style>
-body{margin:0;background:#070a10;color:white;font-family:Arial;padding:16px}
-h1{text-align:center}textarea,select,button{width:100%;box-sizing:border-box;margin:6px 0;padding:14px;border-radius:10px;background:#141923;color:white;border:1px solid #303744}
-button{background:#1769e0;border:0;font-weight:bold}.row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-#out{white-space:pre-wrap;margin-top:15px}
-</style></head><body>
-<h1>JARVIS</h1>
-<textarea id="prompt" rows="7" placeholder="अपनी वीडियो का prompt लिखें..."></textarea>
-<div class="row">
-<select id="duration">
-<option value="60">1 Minute</option><option value="120">2 Minutes</option>
-<option value="300">5 Minutes</option><option value="600">10 Minutes</option>
-<option value="1200">20 Minutes</option></select>
-<select id="quality">
-<option value="1280x720">HD 720p</option><option value="1920x1080">Full HD 1080p</option>
-<option value="2560x1440">1440p</option><option value="3840x2160">4K UHD</option></select>
+*{box-sizing:border-box}
+
+:root{
+ --bg:#070910;
+ --panel:#101522;
+ --panel2:#0c111d;
+ --line:#222b3d;
+ --text:#f5f7fb;
+ --muted:#8f9bb0;
+ --accent:#5b8cff;
+ --accent2:#7b61ff;
+ --success:#38d39f;
+ --danger:#ff647c;
+}
+
+body{
+ margin:0;
+ background:
+ radial-gradient(circle at 15% 0%,#18284c55,transparent 32%),
+ radial-gradient(circle at 90% 20%,#43236d44,transparent 28%),
+ var(--bg);
+ color:var(--text);
+ font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif;
+ min-height:100vh;
+}
+
+.app{
+ max-width:1180px;
+ margin:auto;
+ padding:16px;
+}
+
+.header{
+ display:flex;
+ justify-content:space-between;
+ align-items:center;
+ padding:8px 2px 20px;
+}
+
+.brand{
+ display:flex;
+ align-items:center;
+ gap:11px;
+}
+
+.logo{
+ width:42px;
+ height:42px;
+ display:grid;
+ place-items:center;
+ border-radius:13px;
+ background:linear-gradient(135deg,var(--accent),var(--accent2));
+ font-size:21px;
+ box-shadow:0 10px 30px #4c70ff33;
+}
+
+.brand h1{
+ margin:0;
+ font-size:21px;
+}
+
+.brand p{
+ margin:3px 0 0;
+ color:var(--muted);
+ font-size:11px;
+}
+
+.live{
+ border:1px solid #26344b;
+ background:#0d1522;
+ color:#8fb9ff;
+ padding:8px 11px;
+ border-radius:30px;
+ font-size:11px;
+ font-weight:800;
+}
+
+.layout{
+ display:grid;
+ grid-template-columns:1.6fr .9fr;
+ gap:15px;
+}
+
+.card{
+ background:linear-gradient(145deg,#111827e8,#0b101ae8);
+ border:1px solid var(--line);
+ border-radius:22px;
+ padding:18px;
+ box-shadow:0 20px 60px #0005;
+ backdrop-filter:blur(15px);
+}
+
+.modegrid{
+ display:grid;
+ grid-template-columns:repeat(4,1fr);
+ gap:8px;
+ margin-bottom:17px;
+}
+
+.mode{
+ border:1px solid #27334a;
+ background:#0b111d;
+ color:#aebbd0;
+ border-radius:14px;
+ padding:12px 8px;
+ font-weight:850;
+ font-size:12px;
+}
+
+.mode.active{
+ color:white;
+ border-color:#4c79dc;
+ background:linear-gradient(135deg,#1b3970,#27346a);
+}
+
+h2{
+ margin:0 0 12px;
+ font-size:20px;
+}
+
+label{
+ display:block;
+ color:#aeb9ca;
+ font-size:12px;
+ font-weight:750;
+ margin-top:11px;
+}
+
+textarea,input,select{
+ width:100%;
+ margin-top:7px;
+ border:1px solid #29364b;
+ background:#080d15;
+ color:white;
+ border-radius:13px;
+ padding:13px;
+ outline:none;
+ font-size:14px;
+}
+
+textarea{
+ min-height:145px;
+ resize:vertical;
+}
+
+.grid{
+ display:grid;
+ grid-template-columns:repeat(2,1fr);
+ gap:10px;
+}
+
+.three{
+ grid-template-columns:repeat(3,1fr);
+}
+
+.btn{
+ width:100%;
+ border:0;
+ border-radius:14px;
+ padding:15px;
+ margin-top:15px;
+ background:linear-gradient(135deg,var(--accent),var(--accent2));
+ color:white;
+ font-size:15px;
+ font-weight:900;
+ box-shadow:0 12px 30px #526fff33;
+}
+
+.btn:disabled{
+ opacity:.45;
+}
+
+.hidden{
+ display:none!important;
+}
+
+.parodyInfo{
+ margin-top:11px;
+ padding:12px;
+ border:1px solid #27344a;
+ border-radius:13px;
+ background:#0b1320;
+ color:#9baac0;
+ font-size:12px;
+ line-height:1.5;
+}
+
+.progressCard{
+ position:sticky;
+ top:12px;
+}
+
+.progressHeader{
+ display:flex;
+ justify-content:space-between;
+ align-items:flex-end;
+}
+
+.percent{
+ font-size:43px;
+ font-weight:950;
+ letter-spacing:-2px;
+}
+
+.statusPill{
+ padding:7px 10px;
+ border-radius:20px;
+ background:#10261f;
+ color:var(--success);
+ font-size:11px;
+ font-weight:900;
+}
+
+.bar{
+ width:100%;
+ height:15px;
+ background:#1a2333;
+ border-radius:99px;
+ overflow:hidden;
+ margin-top:14px;
+}
+
+.fill{
+ width:0%;
+ height:100%;
+ background:linear-gradient(90deg,var(--accent),var(--accent2));
+ transition:width .35s ease;
+}
+
+.stage{
+ font-size:15px;
+ font-weight:900;
+ margin-top:14px;
+}
+
+.message{
+ color:var(--muted);
+ font-size:12px;
+ margin-top:5px;
+ line-height:1.45;
+}
+
+.steps{
+ margin-top:18px;
+ display:grid;
+ gap:7px;
+}
+
+.step{
+ display:flex;
+ justify-content:space-between;
+ padding:10px 11px;
+ border-radius:11px;
+ background:#0b111b;
+ color:#66758b;
+ font-size:12px;
+}
+
+.step.active{
+ color:#dbe6ff;
+ background:#14203a;
+}
+
+.step.done{
+ color:var(--success);
+}
+
+.result{
+ margin-top:13px;
+ padding:12px;
+ border-radius:12px;
+ background:#0a111c;
+ border:1px solid #202d40;
+ color:#aebbd0;
+ font-size:12px;
+}
+
+@media(max-width:800px){
+ .layout{grid-template-columns:1fr}
+ .progressCard{position:relative;top:auto}
+}
+
+@media(max-width:600px){
+ .app{padding:10px}
+ .modegrid{grid-template-columns:repeat(2,1fr)}
+ .three{grid-template-columns:1fr}
+ .grid{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+
+<body>
+<div class="app">
+
+<header class="header">
+ <div class="brand">
+  <div class="logo">✦</div>
+  <div>
+   <h1>Animation AI Studio</h1>
+   <p>Create • Animate • Voice • Edit</p>
+  </div>
+ </div>
+ <div class="live" id="connection">● READY</div>
+</header>
+
+<div class="layout">
+
+<main>
+
+<div class="card">
+
+<div class="modegrid">
+<button class="mode active" onclick="setMode('video',this)">🎬 Video</button>
+<button class="mode" onclick="setMode('image',this)">🖼️ Image</button>
+<button class="mode" onclick="setMode('imagevideo',this)">🎞️ Image→Video</button>
+<button class="mode" onclick="setMode('parody',this)">😂 Parody</button>
 </div>
-<button onclick="video()">GENERATE VIDEO</button>
-<button onclick="image()">GENERATE IMAGE</button>
-<button onclick="parody()">GENERATE PARODY</button>
-<div id="out">JARVIS READY</div>
+
+<h2 id="title">Create a Video</h2>
+
+<div id="promptBox">
+<label>Describe your idea</label>
+<textarea id="prompt"
+placeholder="Example: A funny and emotional animated story about Class 9 school life, friendship, exams and unforgettable memories..."></textarea>
+</div>
+
+<div id="parodyBox" class="hidden">
+<label>YouTube video URL</label>
+<input id="youtubeUrl" placeholder="https://youtube.com/watch?v=...">
+
+<div class="parodyInfo">
+<b>Original Parody Mode</b><br>
+Paste a YouTube link. The system analyzes the source concept and creates a
+new animated parody with original characters, dialogue, scenes, music and SFX.
+</div>
+</div>
+
+<div id="options">
+
+<div class="grid">
+<div>
+<label>Duration</label>
+<select id="duration">
+<option value="60">1 minute</option>
+<option value="120">2 minutes</option>
+<option value="300">5 minutes</option>
+<option value="600">10 minutes</option>
+<option value="1200">20 minutes</option>
+</select>
+</div>
+
+<div>
+<label>Quality</label>
+<select id="quality">
+<option>HD</option>
+<option>1080p</option>
+<option>1440p</option>
+<option>4K</option>
+</select>
+</div>
+</div>
+
+<div class="grid">
+<div>
+<label>Aspect Ratio</label>
+<select id="ratio">
+<option value="16:9">16:9 YouTube</option>
+<option value="9:16">9:16 Shorts</option>
+<option value="1:1">1:1 Square</option>
+</select>
+</div>
+
+<div>
+<label>Style</label>
+<select id="style">
+<option>Cinematic Animation</option>
+<option>3D Animation</option>
+<option>Anime Inspired Original</option>
+<option>Comedy Animation</option>
+</select>
+</div>
+</div>
+
+</div>
+
+<button class="btn" id="generate" onclick="generate()">
+✨ Start Generation
+</button>
+
+</div>
+
+</main>
+
+<aside>
+
+<div class="card progressCard">
+
+<div class="progressHeader">
+ <div>
+  <div class="percent" id="percent">0%</div>
+  <div class="stage" id="stage">Ready</div>
+ </div>
+ <div class="statusPill" id="status">READY</div>
+</div>
+
+<div class="bar">
+ <div class="fill" id="fill"></div>
+</div>
+
+<div class="message" id="message">
+No generation is currently running.
+</div>
+
+<div class="steps">
+ <div class="step" id="s1">Story <span>—</span></div>
+ <div class="step" id="s2">Visuals <span>—</span></div>
+ <div class="step" id="s3">Characters <span>—</span></div>
+ <div class="step" id="s4">Voice <span>—</span></div>
+ <div class="step" id="s5">Audio <span>—</span></div>
+ <div class="step" id="s6">Animation <span>—</span></div>
+ <div class="step" id="s7">Encoding <span>—</span></div>
+</div>
+
+<div class="result" id="result">
+Ready. Start a generation to see live progress.
+</div>
+
+</div>
+
+</aside>
+</div>
+</div>
+
 <script>
-async function call(u,b){let r=await fetch(u,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(b)});return r.json()}
-async function video(){out.textContent="GENERATING VIDEO...";out.textContent=JSON.stringify(await call("/api/jarvis/video",{prompt:prompt.value,duration:+duration.value,resolution:quality.value}),null,2)}
-async function image(){out.textContent="GENERATING IMAGE...";out.textContent=JSON.stringify(await call("/api/jarvis/image",{prompt:prompt.value}),null,2)}
-async function parody(){out.textContent="GENERATING PARODY...";out.textContent=JSON.stringify(await call("/api/parody/generate",{prompt:prompt.value,duration:+duration.value,resolution:quality.value}),null,2)}
-</script></body></html>
+let currentMode="video";
+let pollTimer=null;
+
+const stepMap={
+ "Story":"s1",
+ "Visuals":"s2",
+ "Characters":"s3",
+ "Voice":"s4",
+ "Audio":"s5",
+ "Animation":"s6",
+ "Encoding":"s7"
+};
+
+function setMode(mode,button){
+ currentMode=mode;
+
+ document.querySelectorAll(".mode")
+  .forEach(x=>x.classList.remove("active"));
+
+ button.classList.add("active");
+
+ document.getElementById("parodyBox")
+  .classList.toggle("hidden",mode!=="parody");
+
+ document.getElementById("promptBox")
+  .classList.toggle("hidden",mode==="parody");
+
+ document.getElementById("options")
+  .classList.toggle("hidden",mode==="parody");
+
+ document.getElementById("title").textContent=
+  mode==="parody" ? "Create YouTube Parody" :
+  mode==="image" ? "Create AI Image" :
+  mode==="imagevideo" ? "Animate an Image" :
+  "Create a Video";
+}
+
+function updateProgress(p,stage,message,status){
+ p=Math.max(0,Math.min(100,Number(p)||0));
+
+ document.getElementById("percent").textContent=p+"%";
+ document.getElementById("fill").style.width=p+"%";
+ document.getElementById("stage").textContent=stage||"Generating";
+ document.getElementById("message").textContent=message||"Working...";
+ document.getElementById("status").textContent=
+   status==="completed" ? "DONE" :
+   status==="failed" ? "FAILED" :
+   status==="processing" ? "GENERATING" : "QUEUED";
+
+ Object.keys(stepMap).forEach(k=>{
+  const el=document.getElementById(stepMap[k]);
+  el.classList.remove("active","done");
+ });
+
+ const order=Object.keys(stepMap);
+ const index=order.indexOf(stage);
+
+ order.forEach((k,i)=>{
+  const el=document.getElementById(stepMap[k]);
+  if(i<index)el.classList.add("done");
+  if(i===index)el.classList.add("active");
+ });
+}
+
+function stopPolling(){
+ if(pollTimer){
+  clearInterval(pollTimer);
+  pollTimer=null;
+ }
+}
+
+async function poll(id){
+ stopPolling();
+
+ const check=async()=>{
+  try{
+   const r=await fetch(
+    "/api/generation/status/"+encodeURIComponent(id),
+    {cache:"no-store"}
+   );
+
+   if(!r.ok)return;
+
+   const j=await r.json();
+
+   updateProgress(
+    j.progress,
+    j.stage,
+    j.message,
+    j.status
+   );
+
+   if(j.status==="completed"){
+    stopPolling();
+    document.getElementById("result").textContent=
+      "✅ Generation completed. Your project is ready.";
+   }
+
+   if(j.status==="failed"){
+    stopPolling();
+    document.getElementById("result").textContent=
+      "❌ Generation failed: "+(j.error||j.message||"Unknown error");
+   }
+
+  }catch(e){
+   document.getElementById("connection").textContent="● OFFLINE";
+  }
+ };
+
+ await check();
+ pollTimer=setInterval(check,500);
+}
+
+async function generate(){
+
+ const button=document.getElementById("generate");
+ button.disabled=true;
+
+ updateProgress(1,"Starting","Request received...","processing");
+
+ document.getElementById("result").textContent=
+  "🟡 Generation started. Keep this screen open for live status.";
+
+ try{
+
+  const body={
+   mode:currentMode,
+   prompt:document.getElementById("prompt")?.value||"",
+   duration:Number(document.getElementById("duration")?.value||60),
+   quality:document.getElementById("quality")?.value||"HD",
+   ratio:document.getElementById("ratio")?.value||"16:9",
+   style:document.getElementById("style")?.value||"Cinematic Animation"
+  };
+
+  if(currentMode==="parody"){
+   body.url=document.getElementById("youtubeUrl").value.trim();
+
+   if(!body.url){
+    throw new Error("YouTube video link डालो");
+   }
+  }
+
+  const r=await fetch("/api/generate",{
+   method:"POST",
+   headers:{"Content-Type":"application/json"},
+   body:JSON.stringify(body)
+  });
+
+  const j=await r.json();
+
+  if(!r.ok){
+   throw new Error(j.error||"Generation request failed");
+  }
+
+  if(j.jobId){
+   document.getElementById("result").textContent=
+    "🟡 Job "+j.jobId+" is generating...";
+   await poll(j.jobId);
+  }else{
+   updateProgress(
+    100,
+    "Completed",
+    "Generation finished.",
+    "completed"
+   );
+  }
+
+ }catch(e){
+
+  stopPolling();
+
+  updateProgress(
+   0,
+   "Failed",
+   e.message,
+   "failed"
+  );
+
+  document.getElementById("result").textContent=
+   "❌ "+e.message;
+
+ }finally{
+  button.disabled=false;
+ }
+}
+</script>
+</body>
+</html>
