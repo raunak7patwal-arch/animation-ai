@@ -14,13 +14,16 @@
   "dependencies": {
     "@capacitor/android": "^8.5.1",
     "@capacitor/core": "^8.5.1",
+    "@fal-ai/client": "^1.10.1",
     "@huggingface/inference": "^4.13.28",
     "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "fluent-ffmpeg": "^2.1.3",
     "multer": "^2.3.0",
     "replicate": "^1.4.0",
-    "uuid": "^14.0.2"
+    "uuid": "^14.0.2",
+    "wavespeed": "^0.3.2"
   },
   "devDependencies": {
     "@capacitor/cli": "^8.5.1"

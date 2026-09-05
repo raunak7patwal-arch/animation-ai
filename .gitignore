@@ -1,27 +1,8 @@
-# Dependencies
 node_modules/
-
-# Environment / secrets
 .env
-.env.*
-!.env.example
-
-# Generated media
-audio/
-images/
-layers/
-output/
-temp/
-projects/
-
-# Runtime logs
+uploads/*
+outputs/*
+temp/*
 *.log
-server.log
-
-# Backup files
-backups/
-*.tar.gz
-
-# OS files
-.DS_Store
-Thumbs.db
+JARVIS/config/owner.json
+JARVIS/data/memory/memory.json
