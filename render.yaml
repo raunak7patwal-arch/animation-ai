@@ -3,6 +3,6 @@ services:
     name: animation-ai
     runtime: node
     plan: free
-    buildCommand: npm ci
+    buildCommand: apt-get update && apt-get install -y espeak-ng && npm ci
     startCommand: node server.js
     healthCheckPath: /api/health
