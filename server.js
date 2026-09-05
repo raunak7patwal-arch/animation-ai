@@ -269,6 +269,133 @@ async function processVideoQueue() {
    VIDEO GENERATION API
 ========================================== */
 
+
+/* ============================================================
+   UI COMPATIBILITY API
+   Premium UI -> existing video queue
+   ============================================================ */
+app.post("/api/generate", async (req, res) => {
+  try {
+    const b = req.body || {};
+    const mode = String(b.mode || "video");
+    const prompt = String(b.prompt || "").trim();
+
+    if (mode === "parody") {
+      const url = String(b.url || "").trim();
+
+      if (!/^https?:\/\/.+/i.test(url)) {
+        return res.status(400).json({
+          success:false,
+          error:"Valid YouTube video link is required"
+        });
+      }
+    }
+
+    const finalPrompt =
+      mode === "parody"
+        ? `Create a completely original animated parody inspired only by the broad concept of this YouTube reference: ${b.url}. Do not copy footage, audio, exact dialogue, characters, logos or shots. Create original characters, scenes, dialogue, comedy and music.`
+        : prompt;
+
+    if (!finalPrompt) {
+      return res.status(400).json({
+        success:false,
+        error:"Prompt is required"
+      });
+    }
+
+    const durationSeconds = Math.max(
+      60,
+      Math.min(1200, Number(b.duration) || 60)
+    );
+
+    const jobId = createJobId();
+
+    const job = {
+      id: jobId,
+      status: "queued",
+      createdAt: new Date().toISOString(),
+      options: {
+        title: mode === "parody"
+          ? "Original AI Parody"
+          : "Animation AI Video",
+        prompt: finalPrompt,
+        duration: `${Math.round(durationSeconds / 60)} minutes`,
+        quality: String(b.quality || "1080p"),
+        frameSize: String(b.ratio || "16:9"),
+        style: String(b.style || "Cinematic Animation"),
+        mode
+      }
+    };
+
+    videoJobs.set(jobId, job);
+    videoQueue.push(jobId);
+
+    processVideoQueue().catch(err => {
+      console.error("UI API QUEUE ERROR:", err);
+    });
+
+    return res.status(202).json({
+      success:true,
+      jobId,
+      status:"queued",
+      message:"Generation started"
+    });
+
+  } catch (error) {
+    console.error("UI API ERROR:", error);
+
+    return res.status(500).json({
+      success:false,
+      error:error.message || "Generation failed"
+    });
+  }
+});
+
+/* UI status alias */
+app.get("/api/generation/status/:jobId", (req, res) => {
+  const job = videoJobs.get(req.params.jobId);
+
+  if (!job) {
+    return res.status(404).json({
+      success:false,
+      error:"Generation job not found"
+    });
+  }
+
+  let progress = 1;
+  let stage = "Story";
+  let message = "Generation queued...";
+
+  if (job.status === "processing") {
+    progress = 50;
+    stage = "Animation";
+    message = "Rendering your video...";
+  }
+
+  if (job.status === "completed") {
+    progress = 100;
+    stage = "Encoding";
+    message = "Generation completed.";
+  }
+
+  if (job.status === "failed") {
+    progress = 0;
+    stage = "Failed";
+    message = job.error || "Generation failed.";
+  }
+
+  return res.json({
+    success:true,
+    jobId:job.id,
+    status:job.status,
+    progress,
+    stage,
+    message,
+    error:job.error || null,
+    result:job.result || null
+  });
+});
+
 app.post("/generate-video", async (req, res) => {
 
   try {
