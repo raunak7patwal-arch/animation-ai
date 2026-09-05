@@ -1,66 +1,53 @@
-const fs=require('fs');
-const path=require('path');
-const {spawn}=require('child_process');
+const fs=require("fs");
+const path=require("path");
+const {spawnSync,spawn}=require("child_process");
 
-const ROOT=path.resolve(__dirname,'..');
-const MEDIA=path.join(ROOT,'data','media');
+const ROOT=path.resolve(__dirname,"..");
+const MEDIA=path.join(ROOT,"data","media");
 
-function ensure(){
-  for(const x of ['images','videos','audio','output'])
-    fs.mkdirSync(path.join(MEDIA,x),{recursive:true});
+function init(){
+  for(const d of ["images","videos","audio","output"])
+    fs.mkdirSync(path.join(MEDIA,d),{recursive:true});
 }
 
-function ffmpegAvailable(){
-  try{
-    const r=require('child_process').spawnSync('ffmpeg',['-version'],{stdio:'ignore'});
-    return r.status===0;
-  }catch(e){return false}
+function hasFFmpeg(){
+  return spawnSync("ffmpeg",["-version"],{stdio:"ignore"}).status===0;
 }
 
-function ffmpeg(args){
+function run(args){
   return new Promise((resolve,reject)=>{
-    const p=spawn('ffmpeg',args,{stdio:['ignore','pipe','pipe']});
-    let err='';
-    p.stderr.on('data',d=>err+=d.toString());
-    p.on('error',reject);
-    p.on('close',code=>{
-      if(code===0) resolve({success:true});
-      else reject(new Error(err.slice(-4000)||`ffmpeg exited ${code}`));
+    const p=spawn("ffmpeg",["-y",...args]);
+    let error="";
+    p.stderr.on("data",x=>error+=x);
+    p.on("error",reject);
+    p.on("close",code=>{
+      code===0?resolve(true):reject(new Error(error.slice(-3000)));
     });
   });
 }
 
-async function editVideo(input,output,options={}){
-  ensure();
-  if(!ffmpegAvailable()) throw new Error('FFmpeg is not installed');
-  const args=['-y','-i',input];
+async function edit(input,output,opts={}){
+  init();
+  const a=["-i",input];
 
-  if(options.scale) args.push('-vf',`scale=${options.scale}`);
-  if(options.fps) args.push('-r',String(options.fps));
-  if(options.start) args.push('-ss',String(options.start));
-  if(options.duration) args.push('-t',String(options.duration));
+  if(opts.start!=null)a.push("-ss",String(opts.start));
+  if(opts.duration!=null)a.push("-t",String(opts.duration));
+  if(opts.scale)a.push("-vf",`scale=${opts.scale}`);
+  if(opts.fps)a.push("-r",String(opts.fps));
 
-  args.push('-c:v','libx264','-c:a','aac',output);
-  await ffmpeg(args);
+  a.push("-c:v","libx264","-c:a","aac",output);
+  await run(a);
   return output;
 }
 
 async function extractAudio(input,output){
-  if(!ffmpegAvailable()) throw new Error('FFmpeg is not installed');
-  await ffmpeg(['-y','-i',input,'-vn','-c:a','aac',output]);
+  await run(["-i",input,"-vn","-c:a","aac",output]);
   return output;
 }
 
-async function convertMedia(input,output){
-  if(!ffmpegAvailable()) throw new Error('FFmpeg is not installed');
-  await ffmpeg(['-y','-i',input,output]);
+async function convert(input,output){
+  await run(["-i",input,output]);
   return output;
 }
 
-module.exports={
-  ensure,
-  ffmpegAvailable,
-  editVideo,
-  extractAudio,
-  convertMedia
-};
+module.exports={init,hasFFmpeg,edit,extractAudio,convert};

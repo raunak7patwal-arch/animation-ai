@@ -1,0 +1,15 @@
+{
+  "video_generation": true,
+  "image_generation": true,
+  "audio_generation": true,
+  "voice_generation": true,
+  "video_editing": true,
+  "image_to_video": true,
+  "story_to_video": true,
+  "character_animation": true,
+  "youtube_analysis": true,
+  "transformative_remix": true,
+  "memory": true,
+  "jobs": true,
+  "owner_auth": true
+}
