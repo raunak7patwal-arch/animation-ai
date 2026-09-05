@@ -602,7 +602,7 @@ async function generate(){
           "Animation AI backend returned HTML instead of JSON. API route unavailable."
         );
       }
-      const j=await r.json();
+      const j=await window.AnimationAISafeJSON(r);
 
   if(!r.ok){
    throw new Error(j.error||"Generation request failed");
@@ -652,6 +652,32 @@ window.safeApiJSON = async function(response) {
     );
   }
   return response.json();
+};
+</script>
+
+
+<script>
+window.AnimationAISafeJSON = async function(response) {
+  const type = (
+    response.headers.get("content-type") || ""
+  ).toLowerCase();
+
+  const text = await response.text();
+
+  if (!type.includes("application/json")) {
+    throw new Error(
+      "Animation AI API returned HTML/non-JSON. HTTP " +
+      response.status
+    );
+  }
+
+  try {
+    return JSON.parse(text);
+  } catch (_) {
+    throw new Error(
+      "Animation AI API returned invalid JSON."
+    );
+  }
 };
 </script>
 
