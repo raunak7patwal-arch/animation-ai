@@ -2,7 +2,151 @@ const fs = require("fs");
 const { execFile } = require("child_process");
 const { promisify } = require("util");
 
+
 const execFileAsync = promisify(execFile);
+
+/* ============================================================
+   REAL HARDWARE FAST ENCODER V2
+   Android MediaCodec -> automatic software fallback
+   ============================================================ */
+async function hasEncoder(name) {
+  try {
+    const r = await execFileAsync("ffmpeg", [
+      "-hide_banner",
+      "-encoders"
+    ]);
+    return String(r.stdout || "").includes(name);
+  } catch (_) {
+    return false;
+  }
+}
+
+async function selectEncoder() {
+  if (
+    process.platform === "android" &&
+    await hasEncoder("h264_mediacodec")
+  ) {
+    return "h264_mediacodec";
+  }
+
+  return "libx264";
+}
+
+function buildFastArgs({
+  encoder,
+  backgroundFile,
+  boyFile,
+  robotFile,
+  audioFile,
+  filter,
+  duration,
+  outputFile,
+  width,
+  height
+}) {
+  const args = [
+    "-y",
+    "-hide_banner",
+    "-loglevel", "error",
+
+    "-loop", "1",
+    "-framerate", "24",
+    "-i", backgroundFile,
+
+    "-loop", "1",
+    "-framerate", "24",
+    "-i", boyFile,
+
+    "-loop", "1",
+    "-framerate", "24",
+    "-i", robotFile,
+
+    "-stream_loop", "-1",
+    "-i", audioFile,
+
+    "-filter_complex", filter,
+
+    "-map", "[v]",
+    "-map", "3:a",
+    "-t", String(duration),
+
+    "-c:v", encoder
+  ];
+
+  if (encoder === "h264_mediacodec") {
+    const bitrate =
+      width >= 3840 ? "18M" :
+      width >= 2560 ? "12M" :
+      "8M";
+
+    args.push(
+      "-b:v", bitrate,
+      "-maxrate", bitrate,
+      "-bufsize", bitrate
+    );
+  } else {
+    args.push(
+      "-preset", "ultrafast",
+      "-crf", "30",
+      "-pix_fmt", "yuv420p",
+      "-threads", "0"
+    );
+  }
+
+  args.push(
+    "-c:a", "aac",
+    "-b:a", "96k",
+    "-movflags", "+faststart",
+    outputFile
+  );
+
+  return args;
+}
+
+/* ============================================================
+   HARDWARE FIRST — NEVER BREAK GENERATION
+   If MediaCodec fails, automatically retry with libx264.
+   ============================================================ */
+async function runFastEncode(options) {
+  const preferred = await selectEncoder();
+
+  console.log(
+    `⚡ FAST ENCODER: ${preferred} | ` +
+    `${options.width}x${options.height} | 24fps`
+  );
+
+  try {
+    await execFileAsync(
+      "ffmpeg",
+      buildFastArgs({
+        ...options,
+        encoder: preferred
+      })
+    );
+
+    return preferred;
+  } catch (hardwareError) {
+
+    if (preferred !== "h264_mediacodec") {
+      throw hardwareError;
+    }
+
+    console.log(
+      "⚠️ MediaCodec failed — automatic software fallback"
+    );
+
+    await execFileAsync(
+      "ffmpeg",
+      buildFastArgs({
+        ...options,
+        encoder: "libx264"
+      })
+    );
+
+    return "libx264";
+  }
+}
+
 
 function getMovement(sceneNumber) {
   const movements = [
@@ -44,43 +188,18 @@ async function animateLayeredScene({
     `[tmp][robot]overlay=0:0:shortest=0,` +
     `fps=24,trim=duration=${duration},setpts=PTS-STARTPTS[v]`;
 
-  await execFileAsync("ffmpeg", [
-    "-y",
+  await runFastEncode({
+    backgroundFile,
+    boyFile,
+    robotFile,
+    audioFile,
+    filter,
+    duration,
+    outputFile,
+    width,
+    height
+  });
 
-    "-loop", "1",
-    "-framerate", "24",
-    "-i", backgroundFile,
-
-    "-loop", "1",
-    "-framerate", "24",
-    "-i", boyFile,
-
-    "-loop", "1",
-    "-framerate", "24",
-    "-i", robotFile,
-
-    "-stream_loop", "-1",
-    "-i", audioFile,
-
-    "-filter_complex", filter,
-
-    "-map", "[v]",
-    "-map", "3:a",
-
-    "-t", String(duration),
-
-    "-c:v", "libx264",
-    "-preset", "ultrafast",
-    "-crf", "28",
-    "-pix_fmt", "yuv420p",
-
-    "-c:a", "aac",
-    "-b:a", "96k",
-
-    "-movflags", "+faststart",
-
-    outputFile
-  ]);
 
   if (!fs.existsSync(outputFile)) {
     throw new Error(

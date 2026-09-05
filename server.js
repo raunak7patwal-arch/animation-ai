@@ -843,19 +843,18 @@ app.post("/api/parody/generate", async (req, res) => {
 
 
 
+
 /* ============================================================
-   API JSON SAFETY GUARD
-   API endpoints must NEVER fall through to HTML.
+   API JSON SAFETY GUARD V2
+   Unknown /api routes NEVER receive index.html.
+   All declared API routes above this point remain functional.
    ============================================================ */
 app.use("/api", (req, res, next) => {
-  if (req.method !== "GET" && req.method !== "HEAD") {
-    return res.status(404).json({
-      success: false,
-      error: `API endpoint not found: ${req.method} ${req.path}`,
-      api: true
-    });
-  }
-  return next();
+  return res.status(404).json({
+    success: false,
+    api: true,
+    error: `API endpoint not found: ${req.method} ${req.path}`
+  });
 });
 
 // Frontend fallback — API routes के बाद

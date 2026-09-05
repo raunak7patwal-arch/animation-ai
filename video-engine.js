@@ -48,8 +48,12 @@ function getVideoSize(frameSize, quality) {
     return { width: 3840, height: 2160 };
   }
 
-  if (quality === "720p") {
+  if (quality === "HD" || quality === "720p") {
     return { width: 1280, height: 720 };
+  }
+
+  if (quality === "1440p" || quality === "2K") {
+    return { width: 2560, height: 1440 };
   }
 
   return { width: 1920, height: 1080 };
@@ -226,27 +230,53 @@ async function generateVideo({
 
   console.log("🎭 V7: Creating independent character layers...");
 
-  const layeredScenes = [];
+  const layeredScenes = new Array(visualFiles.length);
 
-  for (let i = 0; i < visualFiles.length; i++) {
+  const layerConcurrency =
+    process.env.ANIMATION_FAST_MODE === "true"
+      ? (String(quality).toLowerCase() === "4k" ? 1 : 2)
+      : 1;
 
-    const layers = await createLayers({
-      backgroundFile: visualFiles[i],
-      projectId,
-      sceneNumber: scenes[i].number,
-      width,
-      height,
-      sceneDuration: scenes[i].duration
-    });
+  console.log(
+    `⚡ Layer concurrency: ${layerConcurrency}`
+  );
 
-    layeredScenes.push(layers);
+  for (
+    let start = 0;
+    start < visualFiles.length;
+    start += layerConcurrency
+  ) {
+    const batch = [];
 
-    console.log(
-      `✅ V7 Layers ready for Scene ${scenes[i].number}`
-    );
+    for (
+      let i = start;
+      i < Math.min(start + layerConcurrency, visualFiles.length);
+      i++
+    ) {
+      batch.push(
+        createLayers({
+          backgroundFile: visualFiles[i],
+          projectId,
+          sceneNumber: scenes[i].number,
+          width,
+          height,
+          sceneDuration: scenes[i].duration
+        }).then(layers => {
+          layeredScenes[i] = layers;
+
+          console.log(
+            `✅ V7 Layers ready for Scene ${scenes[i].number}`
+          );
+        })
+      );
+    }
+
+    await Promise.all(batch);
   }
 
-  console.log(`🎭 V7: ${layeredScenes.length} layered scenes created`);
+  console.log(
+    `🎭 V7: ${layeredScenes.length} layered scenes created`
+  );
 
   /*
      STEP 4
@@ -270,35 +300,60 @@ async function generateVideo({
 
   console.log("🎬 Step 5/6: Animating character scenes...");
 
-  const sceneVideos = [];
+  const sceneVideos = new Array(scenes.length);
 
-  for (let i = 0; i < scenes.length; i++) {
+  const sceneConcurrency =
+    process.env.ANIMATION_FAST_MODE === "true"
+      ? (String(quality).toLowerCase() === "4k" ? 1 : 2)
+      : 1;
 
-    // 📷 V9 SMART CAMERA
-    getCameraMotion(scenes[i].number);
+  console.log(
+    `⚡ Scene concurrency: ${sceneConcurrency}`
+  );
 
-    const sceneVideo = path.join(
-      TEMP_DIR,
-      `${projectId}-animated-${i + 1}.mp4`
-    );
+  for (
+    let start = 0;
+    start < scenes.length;
+    start += sceneConcurrency
+  ) {
+    const batch = [];
 
-    await animateLayeredScene({
-      backgroundFile: layeredScenes[i].backgroundFile,
-      boyFile: layeredScenes[i].boyFile,
-      robotFile: layeredScenes[i].robotFile,
-      audioFile: audioFiles[i],
-      outputFile: sceneVideo,
-      sceneNumber: scenes[i].number,
-      width,
-      height,
-      sceneDuration: scenes[i].duration
-    });
+    for (
+      let i = start;
+      i < Math.min(start + sceneConcurrency, scenes.length);
+      i++
+    ) {
+      batch.push((async () => {
 
-    sceneVideos.push(sceneVideo);
+        getCameraMotion(scenes[i].number);
 
-    console.log(
-      `✅ Animated Scene ${i + 1}/${scenes.length}`
-    );
+        const sceneVideo = path.join(
+          TEMP_DIR,
+          `${projectId}-animated-${i + 1}.mp4`
+        );
+
+        await animateLayeredScene({
+          backgroundFile: layeredScenes[i].backgroundFile,
+          boyFile: layeredScenes[i].boyFile,
+          robotFile: layeredScenes[i].robotFile,
+          audioFile: audioFiles[i],
+          outputFile: sceneVideo,
+          sceneNumber: scenes[i].number,
+          width,
+          height,
+          sceneDuration: scenes[i].duration
+        });
+
+        sceneVideos[i] = sceneVideo;
+
+        console.log(
+          `✅ Animated Scene ${i + 1}/${scenes.length}`
+        );
+
+      })());
+    }
+
+    await Promise.all(batch);
   }
 
   /*
@@ -313,28 +368,52 @@ async function generateVideo({
     `${projectId}.mp4`
   );
 
-  // 🎬 V8 CINEMATIC SCENE PIPELINE
-  const v8Video = path.join(
-    TEMP_DIR,
-    `${projectId}-v8-cinematic.mp4`
-  );
+  // ==========================================================
+  // FAST FINALIZATION
+  // No second full-video encode in fast mode.
+  // ==========================================================
+  if (process.env.ANIMATION_FAST_MODE === "true") {
 
-  console.log("🎬 V8: Processing cinematic scene sequence...");
+    console.log(
+      "⚡ FAST FINALIZATION: concat stream copy"
+    );
 
-  await addTransitions({
-    inputFiles: sceneVideos,
-    outputFile: v8Video,
-    width,
-    height
-  });
+    await mergeVideos(
+      sceneVideos,
+      finalVideo
+    );
 
-  // ✨ V10 FINAL QUALITY
-  console.log("✨ V10: Processing final video quality...");
+  } else {
 
-  await enhanceFinalVideo({
-    inputFile: v8Video,
-    outputFile: finalVideo
-  });
+    const v8Video = path.join(
+      TEMP_DIR,
+      `${projectId}-v8-cinematic.mp4`
+    );
+
+    console.log(
+      "🎬 V8: Processing cinematic scene sequence..."
+    );
+
+    await addTransitions({
+      inputFiles: sceneVideos,
+      outputFile: v8Video,
+      width,
+      height
+    });
+
+    console.log(
+      "✨ V10: Processing final video quality..."
+    );
+
+    await enhanceFinalVideo({
+      inputFile: v8Video,
+      outputFile: finalVideo
+    });
+
+    try {
+      fs.unlinkSync(v8Video);
+    } catch (_) {}
+  }
 
   /*
      CLEAN TEMP FILES
