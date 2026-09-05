@@ -1,5 +1,4 @@
 const express = require("express");
-const {installAnimationAPI}=require('./JARVIS/animation/api');
 const cors = require("cors");
 const path = require("path");
 
@@ -33,8 +32,6 @@ const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json({ limit: "50mb" }));
-
-installAnimationAPI(app);
 app.use(express.urlencoded({ extended: true }));
 
 /* ==========================================
